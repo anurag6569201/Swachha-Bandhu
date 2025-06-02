@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './pages/landing/components/layout/Header';
+import Footer from './pages/landing/components/layout/Footer';
+import HomePage from './pages/landing/landingpages/HomePage';
+import AboutPage from './pages/landing/landingpages/AboutPage';
+import HowItWorksPage from './pages/landing/landingpages/HowItWorksPage';
+import FeaturesPage from './pages/landing/landingpages/FeaturesPage';
+import MunicipalitiesPage from './pages/landing/landingpages/MunicipalitiesPage';
+import CSRPartnersPage from './pages/landing/landingpages/CSRPartnersPage';
+import FAQPage from './pages/landing/landingpages/FAQPage';
+import ContactPage from './pages/landing/landingpages/ContactPage';
+import PrivacyPage from './pages/landing/landingpages/PrivacyPage';
+import TermsPage from './pages/landing/landingpages/TermsPage';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/for-municipalities" element={<MunicipalitiesPage />} />
+            <Route path="/for-csr-partners" element={<CSRPartnersPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+          </Routes>
+        </main>
+        <Footer />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
