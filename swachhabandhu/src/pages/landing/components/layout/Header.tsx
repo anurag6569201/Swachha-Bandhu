@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Download } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Menu, X, Download, LogIn } from 'lucide-react';
 import Button from '../ui/Button';
 import Logo from '../ui/Logo';
 
@@ -8,7 +8,7 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
-
+  const navigate = useNavigate();
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -63,10 +63,10 @@ const Header: React.FC = () => {
             <Button 
               variant="primary" 
               size="sm"
-              href="#download"
-              icon={<Download size={16} />}
+              icon={<LogIn size={16} />}
+              onClick={() => navigate('/login')}
             >
-              Download App
+              Login
             </Button>
           </nav>
 

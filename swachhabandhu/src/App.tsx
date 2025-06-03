@@ -12,6 +12,8 @@ import FAQPage from './pages/landing/landingpages/FAQPage';
 import ContactPage from './pages/landing/landingpages/ContactPage';
 import PrivacyPage from './pages/landing/landingpages/PrivacyPage';
 import TermsPage from './pages/landing/landingpages/TermsPage';
+import LoginPage from './pages/landing/landingpages/LoginPage';
+import SignupPage from './pages/landing/landingpages/SignupPage';
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/for-municipalities" element={<MunicipalitiesPage />} />
             <Route path="/for-csr-partners" element={<CSRPartnersPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
