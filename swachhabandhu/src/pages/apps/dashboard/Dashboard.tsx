@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart2, Users, CheckCircle, AlertCircle, List } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext'; 
-import SectionHeading from '../../landing/components/ui/SectionHeading'; 
+import { BarChart2, Users, CheckCircle, AlertCircle, List, LogOut } from 'lucide-react'; // Added LogOut icon
+import { useNavigate } from 'react-router-dom'; 
+import { useAuth } from '../../../context/AuthContext';
+import SectionHeading from '../../landing/components/ui/SectionHeading';
 import Button from '../../landing/components/ui/Button';
 
 interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  color: string; 
+  color: string;
   delay?: number;
 }
 
@@ -31,12 +32,23 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, delay = 
 };
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth(); // Get logout function from useAuth
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     document.title = 'Dashboard - Swachh Bandhu';
     window.scrollTo(0, 0);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout(); // Call your logout function
+      navigate('/auth/login'); // Redirect to login page (adjust path if different)
+    } catch (error) {
+      console.error("Failed to logout:", error);
+      // Optionally, show an error message to the user
+    }
+  };
 
   // Placeholder data
   const stats = [
@@ -64,7 +76,7 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="mt-20 min-h-screen bg-gray-100 py-8"> 
+    <div className="mt-20 min-h-screen bg-gray-100 py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -86,8 +98,9 @@ const DashboardPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Recent Activity Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6"> 
+        {/* Recent Activity & Quick Actions Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8"> {/* Changed to lg:grid-cols-2 for better layout */}
+          {/* Recent Activity */}
           <motion.div
             className="bg-white p-6 rounded-xl shadow-lg"
             initial={{ opacity: 0, y: 20 }}
@@ -116,20 +129,27 @@ const DashboardPage: React.FC = () => {
             )}
           </motion.div>
 
-          
-          <motion.div 
+          {/* Quick Actions */}
+          <motion.div
             className="bg-white p-6 rounded-xl shadow-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
           >
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
-            <div className="space-y-2">
+            <div className="space-y-3"> {/* Increased spacing a bit */}
               <Button variant="primary" className="w-full">Submit New Report</Button>
               <Button variant="secondary" className="w-full">View My Reports</Button>
+              <Button
+                variant="danger" // Assuming you have a 'danger' or 'outline' variant, or style it accordingly
+                className="w-full flex items-center justify-center" // For icon alignment
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-5 w-5" /> Logout
+              </Button>
             </div>
           </motion.div>
-         
+
         </div>
       </div>
     </div>

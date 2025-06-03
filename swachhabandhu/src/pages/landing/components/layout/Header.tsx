@@ -64,7 +64,7 @@ const Header: React.FC = () => {
               variant="primary" 
               size="sm"
               icon={<LogIn size={16} />}
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/auth/login')}
             >
               Login
             </Button>

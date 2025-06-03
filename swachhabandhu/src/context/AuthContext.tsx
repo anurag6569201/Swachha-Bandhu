@@ -95,8 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       await clearAuthData();
       setIsLoading(false);
-      // Optional: redirect to home or login page
-      // window.location.href = '/login'; // Can cause full page reload, better handled by router if possible
+      window.location.href = '/auth/login'; 
     }
   };
 

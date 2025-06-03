@@ -67,7 +67,7 @@ const SignupPage: React.FC = () => {
       setTermsAccepted(false);
       
       setTimeout(() => {
-        navigate('/login'); 
+        navigate('/auth/login'); 
       }, 3000);
 
     } catch (err: any) {
@@ -281,7 +281,7 @@ const SignupPage: React.FC = () => {
               <div className="mt-8 text-center">
                 <p className="text-sm text-gray-600">
                   Already have an account?{' '}
-                  <Link to="/login" className="font-medium text-teal-600 hover:text-teal-700 hover:underline">
+                  <Link to="/auth/login" className="font-medium text-teal-600 hover:text-teal-700 hover:underline">
                     Log In
                   </Link>
                 </p>

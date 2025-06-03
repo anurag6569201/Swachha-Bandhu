@@ -23,7 +23,7 @@ const ResetPasswordPage: React.FC = () => {
   useEffect(() => {
     if (!token) {
       setError("Invalid or missing password reset token.");
-      // navigate('/forgot-password'); // Optional: redirect
+      navigate('/auth/forgot-password'); // Optional: redirect
     }
   }, [token, navigate]);
 
@@ -49,7 +49,7 @@ const ResetPasswordPage: React.FC = () => {
         confirm_new_password: confirmNewPassword, // Serializer expects 'confirm_new_password'
       });
       setMessage(response.data.message || "Your password has been reset successfully. You can now log in.");
-      setTimeout(() => navigate('/login'), 3000);
+      setTimeout(() => navigate('/auth/login'), 3000);
     } catch (err: any) {
       console.error('Reset password error:', err.response?.data);
       if (err.response && err.response.data) {
@@ -172,7 +172,7 @@ const ResetPasswordPage: React.FC = () => {
             )}
              {message && (
                 <div className="mt-8 text-center">
-                     <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
+                     <Link to="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
                         Proceed to Login
                     </Link>
                 </div>

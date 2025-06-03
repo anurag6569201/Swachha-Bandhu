@@ -124,7 +124,7 @@ const LoginPage: React.FC = () => {
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                       Password
                     </label>
-                    <Link to="/forgot-password" className="text-sm text-teal-600 hover:text-teal-700 hover:underline">
+                    <Link to="/auth/forgot-password" className="text-sm text-teal-600 hover:text-teal-700 hover:underline">
                       Forgot password?
                     </Link>
                   </div>
@@ -175,7 +175,7 @@ const LoginPage: React.FC = () => {
               <div className="mt-8 text-center">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{' '}
-                  <Link to="/signup" className="font-medium text-teal-600 hover:text-teal-700 hover:underline">
+                  <Link to="/auth/signup" className="font-medium text-teal-600 hover:text-teal-700 hover:underline">
                     Sign Up
                   </Link>
                 </p>
