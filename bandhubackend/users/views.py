@@ -30,12 +30,9 @@ class RegisterView(generics.CreateAPIView):
             "message": "User registered successfully. Please log in."
         }, status=status.HTTP_201_CREATED)
 
-# Using MyTokenObtainPairView for login to get custom claims in token
-# If you need more custom logic for login, create a LoginView like before.
-# For simplicity, let's stick with MyTokenObtainPairView for login.
 
 class LogoutView(views.APIView):
-    permission_classes = (permissions.IsAuthenticated,) # Require authentication
+    permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
         try:
@@ -46,10 +43,10 @@ class LogoutView(views.APIView):
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
-        except TokenError as e: # Catches BlacklistedToken and TokenError
+        except TokenError as e: 
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # print(f"Logout error: {e}") # For debugging
+            # print(f"Logout error: {e}") 
             return Response({"error": "An error occurred during logout."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class PasswordResetRequestView(generics.GenericAPIView):
@@ -59,7 +56,7 @@ class PasswordResetRequestView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        result = serializer.save() # This now sends the email
+        result = serializer.save() 
         return Response(result, status=status.HTTP_200_OK)
 
 class PasswordResetConfirmView(generics.GenericAPIView):

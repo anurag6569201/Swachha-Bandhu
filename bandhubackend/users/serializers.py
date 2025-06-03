@@ -18,7 +18,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['email'] = user.email
         token['full_name'] = user.full_name
-        # Add other claims if needed
         return token
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -97,7 +96,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError({"new_password": "Passwords didn't match."})
         
         try:
-            # No decoding needed if token is sent as is from email
             self.user = User.objects.get(password_reset_token=attrs['token'])
             if not self.user.is_password_reset_token_valid():
                 raise serializers.ValidationError(_("Password reset link is invalid or has expired."))
@@ -108,6 +106,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
     def save(self):
         self.user.set_password(self.validated_data['new_password'])
-        self.user.clear_password_reset_token() # Clear the token
+        self.user.clear_password_reset_token()
         self.user.save()
         return {"message": "Password has been reset successfully."}
