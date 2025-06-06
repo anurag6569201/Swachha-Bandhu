@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # Your apps
     'users',
+    'issues',
 ]
 
 MIDDLEWARE = [
@@ -185,8 +186,11 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:3000",
-#     "http://127.0.0.1:3000",
+#     "http://localhost:3000",
 # ]
 
 PASSWORD_RESET_TIMEOUT_HOURS = 1 
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174')
+
+
+GEO_FENCE_RADIUS = 500
