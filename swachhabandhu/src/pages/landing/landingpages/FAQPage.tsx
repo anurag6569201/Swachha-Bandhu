@@ -27,7 +27,7 @@ const FAQPage: React.FC = () => {
   const faqItems: FaqItem[] = [
     {
       question: 'What is Swachh Bandhu?',
-      answer: 'Swachh Bandhu is a mobile-first civic issue reporting platform that uses QR codes, geo-fencing, community verification, and gamification to create a trusted system for citizens to report and track civic issues in their communities.',
+      answer: 'Swachh Bandhu is a mobile-first civic issue reporting platform that uses QR codes, geo-fencing, community verification, and LeaderboardPage to create a trusted system for citizens to report and track civic issues in their communities.',
       category: 'general'
     },
     {

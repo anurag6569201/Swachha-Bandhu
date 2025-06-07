@@ -230,7 +230,7 @@ const HowItWorksPage: React.FC = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h3 className="text-xl font-semibold mb-4">Gamification Engine</h3>
+            <h3 className="text-xl font-semibold mb-4">LeaderboardPage Engine</h3>
             <p className="text-gray-600 mb-4">
               Our platform rewards civic participation through points, badges, leaderboards, and real-world rewards, creating sustained engagement.
             </p>

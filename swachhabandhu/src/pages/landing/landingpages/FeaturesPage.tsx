@@ -218,7 +218,7 @@ const FeaturesPage: React.FC = () => {
             >
               <h3 className="text-xl font-semibold mb-4">Behavioral Economics</h3>
               <p className="text-gray-600">
-                Our gamification system applies principles of behavioral economics to maximize civic participation and create sustainable engagement.
+                Our LeaderboardPage system applies principles of behavioral economics to maximize civic participation and create sustainable engagement.
               </p>
             </motion.div>
 

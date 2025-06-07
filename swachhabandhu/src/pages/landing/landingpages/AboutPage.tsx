@@ -19,7 +19,7 @@ const AboutPage: React.FC = () => {
       delay: 0
     },
     {
-      quote: "The gamification elements helped us increase citizen participation by over 200% in just three months.",
+      quote: "The LeaderboardPage elements helped us increase citizen participation by over 200% in just three months.",
       name: "Bangalore Urban Local Body",
       role: "Municipal Partner",
       delay: 0.1
@@ -133,7 +133,7 @@ const AboutPage: React.FC = () => {
                 <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-teal-100 text-teal-600 mt-1 mr-3">
                   <span className="text-sm font-bold">5</span>
                 </div>
-                <p><strong>Technological Maturity:</strong> QR codes, geo-fencing, and gamification have reached mainstream adoption, enabling our verification and engagement model.</p>
+                <p><strong>Technological Maturity:</strong> QR codes, geo-fencing, and LeaderboardPage have reached mainstream adoption, enabling our verification and engagement model.</p>
               </li>
             </ul>
           </motion.div>

@@ -35,7 +35,7 @@ const TermsPage: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">2. Description of Service</h3>
               <p>
-                Swachh Bandhu is a civic issue reporting platform that enables citizens to report and verify civic issues, allows municipalities to manage and resolve these issues, and provides a transparent system for tracking civic improvement. The Platform uses QR codes, geo-fencing, community verification, and gamification to create a trusted reporting ecosystem.
+                Swachh Bandhu is a civic issue reporting platform that enables citizens to report and verify civic issues, allows municipalities to manage and resolve these issues, and provides a transparent system for tracking civic improvement. The Platform uses QR codes, geo-fencing, community verification, and LeaderboardPage to create a trusted reporting ecosystem.
               </p>
             </div>
 
