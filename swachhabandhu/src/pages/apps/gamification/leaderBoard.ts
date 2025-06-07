@@ -1,11 +1,12 @@
 // src/pages/apps/LeaderboardPage/leaderBoard.ts
+
 export interface UserAction {
   actionId: string;
   actionType: 'waste_collection' | 'recycling' | 'event_participation' | 'referral';
   wasteType?: 'plastic' | 'organic' | 'metal' | 'other';
-  quantity: number; 
+  quantity: number;
   timestamp: string;
-  points: number; 
+  points: number;
 }
 
 export interface LeaderboardEntry {
@@ -54,31 +55,30 @@ export const mockLeaderboardData = {
       zoneId: 'all',
       actions: [
         { actionId: 'a1', actionType: 'recycling', wasteType: 'plastic', quantity: 100, timestamp: '2025-06-01T10:00:00Z', points: 1500 },
-        { actionId: 'a2', actionType: 'event_participation', quantity: 2, timestamp: '2025-05-15T09:00:00Z', points: 100 },
+        { actionId: 'a2', actionType: 'event_participation', quantity: 2, timestamp: '2025-06-02T09:00:00Z', points: 100 },
       ],
     },
     {
       userId: 'u2',
-      name: 'Priya Sharma',
+      name: 'Aarti Devi',
       city: 'Mumbai',
       points: 0,
       rank: 2,
       zoneId: 'all',
       actions: [
-        { actionId: 'a3', actionType: 'waste_collection', wasteType: 'organic', quantity: 150, timestamp: '2025-06-02T12:00:00Z', points: 1500 },
-        { actionId: 'a4', actionType: 'referral', quantity: 3, timestamp: '2025-06-01T14:00:00Z', points: 60 },
+        { actionId: 'a3', actionType: 'waste_collection', wasteType: 'organic', quantity: 80, timestamp: '2025-06-03T12:00:00Z', points: 800 },
+        { actionId: 'a4', actionType: 'referral', quantity: 2, timestamp: '2025-06-04T14:00:00Z', points: 40 },
       ],
     },
     {
       userId: 'u3',
-      name: 'Amit Patel',
+      name: 'Vikram Yadav',
       city: 'Bengaluru',
       points: 0,
       rank: 3,
       zoneId: 'all',
       actions: [
-        { actionId: 'a5', actionType: 'recycling', wasteType: 'metal', quantity: 80, timestamp: '2025-06-03T11:00:00Z', points: 960 },
-        { actionId: 'a6', actionType: 'event_participation', quantity: 1, timestamp: '2025-04-01T10:00:00Z', points: 50 },
+        { actionId: 'a5', actionType: 'recycling', wasteType: 'metal', quantity: 60, timestamp: '2025-06-05T11:00:00Z', points: 720 },
       ],
     },
     {
@@ -89,7 +89,7 @@ export const mockLeaderboardData = {
       rank: 4,
       zoneId: 'all',
       actions: [
-        { actionId: 'a7', actionType: 'waste_collection', wasteType: 'other', quantity: 120, timestamp: '2025-06-04T13:00:00Z', points: 1200 },
+        { actionId: 'a6', actionType: 'waste_collection', wasteType: 'other', quantity: 120, timestamp: '2025-06-04T13:00:00Z', points: 1200 },
       ],
     },
     {
@@ -100,8 +100,8 @@ export const mockLeaderboardData = {
       rank: 5,
       zoneId: 'all',
       actions: [
-        { actionId: 'a8', actionType: 'recycling', wasteType: 'plastic', quantity: 60, timestamp: '2025-06-05T15:00:00Z', points: 900 },
-        { actionId: 'a9', actionType: 'referral', quantity: 2, timestamp: '2025-06-06T16:00:00Z', points: 40 },
+        { actionId: 'a7', actionType: 'recycling', wasteType: 'plastic', quantity: 60, timestamp: '2025-06-05T15:00:00Z', points: 900 },
+        { actionId: 'a8', actionType: 'referral', quantity: 2, timestamp: '2025-06-06T16:00:00Z', points: 40 },
       ],
     },
   ],
@@ -115,7 +115,7 @@ export const mockLeaderboardData = {
         rank: 1,
         zoneId: 'zone_a',
         actions: [
-          { actionId: 'a10', actionType: 'recycling', wasteType: 'plastic', quantity: 50, timestamp: '2025-06-01T10:00:00Z', points: 750 },
+          { actionId: 'z1', actionType: 'recycling', wasteType: 'plastic', quantity: 50, timestamp: '2025-06-01T10:00:00Z', points: 750 },
         ],
       },
       {
@@ -126,31 +126,20 @@ export const mockLeaderboardData = {
         rank: 2,
         zoneId: 'zone_a',
         actions: [
-          { actionId: 'a11', actionType: 'waste_collection', wasteType: 'organic', quantity: 70, timestamp: '2025-06-02T12:00:00Z', points: 700 },
-        ],
-      },
-      {
-        userId: 'u6',
-        name: 'Ankita Mehra',
-        city: 'Noida',
-        points: 0,
-        rank: 3,
-        zoneId: 'zone_a',
-        actions: [
-          { actionId: 'a12', actionType: 'event_participation', quantity: 1, timestamp: '2025-06-03T11:00:00Z', points: 50 },
+          { actionId: 'z2', actionType: 'waste_collection', wasteType: 'organic', quantity: 70, timestamp: '2025-06-02T12:00:00Z', points: 700 },
         ],
       },
     ],
     zone_b: [
       {
         userId: 'u2',
-        name: 'Priya Sharma',
+        name: 'Aarti Devi',
         city: 'Mumbai',
         points: 0,
         rank: 1,
         zoneId: 'zone_b',
         actions: [
-          { actionId: 'a13', actionType: 'waste_collection', wasteType: 'organic', quantity: 80, timestamp: '2025-06-01T14:00:00Z', points: 800 },
+          { actionId: 'z3', actionType: 'waste_collection', wasteType: 'organic', quantity: 50, timestamp: '2025-06-03T14:00:00Z', points: 500 },
         ],
       },
       {
@@ -161,7 +150,7 @@ export const mockLeaderboardData = {
         rank: 2,
         zoneId: 'zone_b',
         actions: [
-          { actionId: 'a14', actionType: 'recycling', wasteType: 'plastic', quantity: 40, timestamp: '2025-06-02T15:00:00Z', points: 600 },
+          { actionId: 'z4', actionType: 'recycling', wasteType: 'plastic', quantity: 40, timestamp: '2025-06-04T15:00:00Z', points: 600 },
         ],
       },
       {
@@ -172,42 +161,42 @@ export const mockLeaderboardData = {
         rank: 3,
         zoneId: 'zone_b',
         actions: [
-          { actionId: 'a15', actionType: 'referral', quantity: 2, timestamp: '2025-06-03T16:00:00Z', points: 40 },
+          { actionId: 'z5', actionType: 'referral', quantity: 2, timestamp: '2025-06-03T16:00:00Z', points: 40 },
         ],
       },
     ],
     zone_c: [
       {
         userId: 'u3',
-        name: 'Amit Patel',
+        name: 'Vikram Yadav',
         city: 'Bengaluru',
         points: 0,
         rank: 1,
         zoneId: 'zone_c',
         actions: [
-          { actionId: 'a16', actionType: 'recycling', wasteType: 'metal', quantity: 60, timestamp: '2025-06-01T10:00:00Z', points: 720 },
+          { actionId: 'z6', actionType: 'recycling', wasteType: 'metal', quantity: 40, timestamp: '2025-06-05T10:00:00Z', points: 480 },
         ],
       },
       {
-        userId: 'u8',
-        name: 'Maya Reddy',
-        city: 'Bengaluru',
+        userId: 'u6',
+        name: 'Sneha Reddy',
+        city: 'Chennai',
         points: 0,
         rank: 2,
         zoneId: 'zone_c',
         actions: [
-          { actionId: 'a17', actionType: 'waste_collection', wasteType: 'other', quantity: 50, timestamp: '2025-06-02T12:00:00Z', points: 500 },
+          { actionId: 'z7', actionType: 'event_participation', quantity: 1, timestamp: '2025-06-06T11:00:00Z', points: 50 },
         ],
       },
       {
-        userId: 'u9',
+        userId: 'u8',
         name: 'Arjun Das',
         city: 'Chennai',
         points: 0,
         rank: 3,
         zoneId: 'zone_c',
         actions: [
-          { actionId: 'a18', actionType: 'event_participation', quantity: 1, timestamp: '2025-06-03T11:00:00Z', points: 50 },
+          { actionId: 'z8', actionType: 'event_participation', quantity: 1, timestamp: '2025-06-03T11:00:00Z', points: 50 },
         ],
       },
     ],
