@@ -30,7 +30,7 @@ const FeaturesHighlightSection: React.FC = () => {
     },
     {
       icon: <Trophy size={32} />,
-      title: 'Gamification & Rewards',
+      title: 'LeaderboardPage & Rewards',
       description: 'Points, leaderboards, and rewards drive engagement and participation.',
       color: 'bg-purple-100 text-purple-600',
       delay: 0.3

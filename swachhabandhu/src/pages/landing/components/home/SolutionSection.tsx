@@ -25,7 +25,7 @@ const SolutionSection: React.FC = () => {
     },
     {
       icon: <Trophy size={24} />,
-      title: 'Gamification & Rewards',
+      title: 'LeaderboardPage & Rewards',
       description: 'Earn points, climb leaderboards, and win rewards for positive civic participation.'
     },
     {
@@ -53,7 +53,7 @@ const SolutionSection: React.FC = () => {
                 Swachh Bandhu revolutionizes civic reporting with a mobile-first platform that ensures accuracy, builds trust, and motivates citizen participation.
               </p>
               <p className='text-center'>
-                By combining QR technology, community verification, and gamification, we've created a system that delivers real value to both citizens and municipalities.
+                By combining QR technology, community verification, and LeaderboardPage, we've created a system that delivers real value to both citizens and municipalities.
               </p>
             </>
           }

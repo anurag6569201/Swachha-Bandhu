@@ -1,6 +1,7 @@
 // src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext'; 
+import LeaderboardPage from './pages/apps/gamification/LeaderboardPage';
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -22,15 +23,35 @@ function AppStructure() {
     <Routes>
       <Route element={<PublicLayout />}>
 
+        {/* Explicit Leaderboard Routes */}
         <Route 
-          path="/app/*" 
+          path="/app/leaderboard" 
           element={
-            <ProtectedRoute> 
-                <AppProtectedRoutes />
+            <ProtectedRoute>
+              <LeaderboardPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/app/leaderboard/:view" 
+          element={
+            <ProtectedRoute>
+              <LeaderboardPage />
             </ProtectedRoute>
           } 
         />
 
+        {/* Existing app protected routes under /app/* */}
+        <Route 
+          path="/app/*" 
+          element={
+            <ProtectedRoute> 
+              <AppProtectedRoutes />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Auth routes */}
         <Route 
           path="/auth/*" 
           element={
@@ -40,6 +61,7 @@ function AppStructure() {
           } 
         />
         
+        {/* Landing routes */}
         <Route path="/*" element={<PublicOnlyRoute><LandingRoutes /></PublicOnlyRoute>} />
         
       </Route>
