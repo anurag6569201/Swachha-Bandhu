@@ -1,6 +1,7 @@
 // src/pages/apps/LeaderboardPage/LeaderboardPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Leaf, Users, Globe, MapPin, Award, Zap } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import type { LeaderboardEntry } from './leaderBoard';
@@ -14,10 +15,8 @@ const LeaderboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [animateCards, setAnimateCards] = useState(false);
 
-  // Get active view for consistent state management
   const activeView = view || 'global';
 
-  // Simulate async data fetch
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -25,16 +24,12 @@ const LeaderboardPage: React.FC = () => {
       try {
         setLoading(true);
         setAnimateCards(false);
-        
-        // Simulate API delay
         await new Promise((resolve) => setTimeout(resolve, 300));
         const data =
           view && view !== 'global'
             ? mockLeaderboardData.zones[view] || []
             : mockLeaderboardData.global;
         setLeaderboardData(data);
-        
-        // Trigger card animations after data loads
         setTimeout(() => setAnimateCards(true), 100);
       } catch (error) {
         console.error('Error loading leaderboard:', error);
@@ -51,15 +46,19 @@ const LeaderboardPage: React.FC = () => {
   };
 
   const getRankIcon = (rank: number) => {
-    switch(rank) {
-      case 1: return <Trophy className="w-5 h-5 text-yellow-500" />;
-      case 2: return <Award className="w-5 h-5 text-gray-400" />;
-      case 3: return <Award className="w-5 h-5 text-amber-600" />;
-      default: return (
-        <div className="w-5 h-5 flex items-center justify-center text-sm font-semibold text-emerald-600">
-          #{rank}
-        </div>
-      );
+    switch (rank) {
+      case 1:
+        return <Trophy className="w-5 h-5 text-yellow-500" />;
+      case 2:
+        return <Award className="w-5 h-5 text-gray-400" />;
+      case 3:
+        return <Award className="w-5 h-5 text-amber-600" />;
+      default:
+        return (
+          <div className="w-5 h-5 flex items-center justify-center text-sm font-semibold text-emerald-600">
+            #{rank}
+          </div>
+        );
     }
   };
 
@@ -67,19 +66,27 @@ const LeaderboardPage: React.FC = () => {
     return zone.split('_')[1]?.toUpperCase() || zone;
   };
 
-  if (!isAuthenticated) return null; // Handled by ProtectedRoute
+  const getContributionSummary = (actions: LeaderboardEntry['actions']) => {
+    const waste = actions
+      .filter((a) => ['waste_collection', 'recycling'].includes(a.actionType))
+      .reduce((sum, a) => sum + a.quantity, 0);
+    const events = actions.filter((a) => a.actionType === 'event_participation').reduce((sum, a) => sum + a.quantity, 0);
+    const referrals = actions.filter((a) => a.actionType === 'referral').reduce((sum, a) => sum + a.quantity, 0);
+    return { waste, events, referrals };
+  };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="p-3 bg-emerald-100 rounded-full">
               <Leaf className="w-8 h-8 text-emerald-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800">Eco Champions</h1>
+            <h1 className="text-3xl font-bold text-gray-800">SwachhSevaks</h1>
           </div>
           <p className="text-gray-600 max-w-md mx-auto">
             Leading the way towards a cleaner, greener tomorrow through community action
@@ -162,7 +169,11 @@ const LeaderboardPage: React.FC = () => {
         {loading && (
           <div className="text-center py-12">
             <div className="inline-flex items-center gap-3 text-emerald-600">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-600 border-t-transparent"></div>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full"
+              />
               <span className="font-medium">Loading champions...</span>
             </div>
           </div>
@@ -171,61 +182,80 @@ const LeaderboardPage: React.FC = () => {
         {/* Leaderboard Cards */}
         {!loading && (
           <div className="space-y-3">
-            {leaderboardData.map((entry, index) => (
-              <div
-                key={entry.userId}
-                className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 transform ${
-                  animateCards ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-                } ${entry.rank <= 3 ? 'ring-2 ring-emerald-100' : ''}`}
-                style={{ transitionDelay: `${index * 50}ms` }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full">
-                      {getRankIcon(entry.rank)}
+            <AnimatePresence>
+              {leaderboardData.map((entry, index) => {
+                const { waste, events, referrals } = getContributionSummary(entry.actions);
+                return (
+                  <motion.div
+                    key={entry.userId}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: animateCards ? 1 : 0, y: animateCards ? 0 : 20 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 ${
+                      entry.rank <= 3 ? 'ring-2 ring-emerald-100' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full">
+                          {getRankIcon(entry.rank)}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-800 text-lg">{entry.name}</h3>
+                          <p className="text-sm text-gray-500">
+                            {entry.city} | Rank #{entry.rank}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Leaf className="w-4 h-4 text-emerald-500" />
+                          <span className="text-2xl font-bold text-emerald-600">
+                            {entry.points.toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">eco points</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{entry.name}</h3>
-                      <p className="text-sm text-gray-500">Rank #{entry.rank}</p>
+                    <div className="mt-4 text-sm text-gray-600">
+                      <p>
+                        {waste > 0 ? `${waste} kg waste collected/recycled` : ''}
+                        {waste > 0 && (events > 0 || referrals > 0) ? ' • ' : ''}
+                        {events > 0 ? `${events} event${events > 1 ? 's' : ''} attended` : ''}
+                        {(waste > 0 || events > 0) && referrals > 0 ? ' • ' : ''}
+                        {referrals > 0 ? `${referrals} referral${referrals > 1 ? 's' : ''}` : ''}
+                      </p>
                     </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Leaf className="w-4 h-4 text-emerald-500" />
-                      <span className="text-2xl font-bold text-emerald-600">
-                        {entry.points.toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500">eco points</p>
-                  </div>
-                </div>
-                
-                {/* Progress bar for top 3 */}
-                {entry.rank <= 3 && (
-                  <div className="mt-4">
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-emerald-500 to-green-400 h-2 rounded-full transition-all duration-1000"
-                        style={{ 
-                          width: `${Math.min((entry.points / (leaderboardData[0]?.points || 1)) * 100, 100)}%`,
-                          transitionDelay: `${(index + 1) * 200}ms`
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            
+                    {entry.rank <= 3 && (
+                      <div className="mt-4">
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min((entry.points / (leaderboardData[0]?.points || 1)) * 100, 100)}%` }}
+                            transition={{ duration: 1, delay: (index + 1) * 0.2 }}
+                            className="bg-gradient-to-r from-emerald-500 to-green-400 h-2 rounded-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
             {leaderboardData.length === 0 && !loading && (
-              <div className="text-center py-12">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-center py-12"
+              >
                 <div className="mb-4">
                   <Leaf className="w-16 h-16 text-gray-300 mx-auto" />
                 </div>
                 <p className="text-gray-500 font-medium">No champions found</p>
                 <p className="text-sm text-gray-400">Be the first to make an impact!</p>
-              </div>
+              </motion.div>
             )}
           </div>
         )}
