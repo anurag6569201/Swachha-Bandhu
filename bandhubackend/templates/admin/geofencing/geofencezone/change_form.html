@@ -1,0 +1,178 @@
+<!-- templates/admin/geofencing/geofencezone/change_form.html -->
+
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block content %}
+{{ block.super }}
+
+<style>
+    /* Add some basic styling for our new tools */
+    .geotools-container {
+        padding: 10px;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        border-top: none; /* Attach it visually to the map widget */
+        margin-top: -10px; /* Overlap a bit with the bottom of the map */
+        position: relative;
+        z-index: 1; /* Make sure it's above other elements if needed */
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    .geotools-container input[type="text"] {
+        flex-grow: 1;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .geotools-container button {
+        padding: 8px 12px;
+        background-color: #417690;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .geotools-container button:hover {
+        background-color: #356077;
+    }
+    #search-results {
+        list-style: none;
+        padding: 0;
+        margin: 5px 0 0 0;
+        border: 1px solid #ddd;
+        max-height: 150px;
+        overflow-y: auto;
+        background: white;
+    }
+    #search-results li {
+        padding: 8px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+    #search-results li:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Wait for the map to be initialized by Django's admin scripts
+    // We use a small delay and check because the map initialization is asynchronous
+    setTimeout(initializeGeoTools, 500);
+});
+
+function initializeGeoTools() {
+    // Find the map widget container for our 'center' field
+    const mapWidget = document.getElementById('id_center_map');
+    if (!mapWidget) {
+        console.error("Could not find the map widget for 'center' field.");
+        return;
+    }
+
+    // Create our tools container
+    const toolsContainer = document.createElement('div');
+    toolsContainer.className = 'geotools-container';
+    
+    // 1. Create the Geolocation Button
+    const findMeButton = document.createElement('button');
+    findMeButton.type = 'button';
+    findMeButton.innerText = 'Find My Location';
+    findMeButton.onclick = function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lon = position.coords.longitude;
+                const lat = position.coords.latitude;
+                // ol is the OpenLayers map object instance created by Django admin
+                const map = ol.Map.getMapById('id_center_map');
+                const view = map.getView();
+                // Transform coordinates from WGS84 (browser) to the map's projection (usually Web Mercator)
+                const center = ol.proj.fromLonLat([lon, lat]);
+                view.setCenter(center);
+                view.setZoom(14);
+
+                // Also update the hidden text input that stores the PointField value
+                const pointInput = document.getElementById('id_center');
+                if (pointInput) {
+                    pointInput.value = `SRID=4326;POINT (${lon} ${lat})`;
+                    // Trigger a change event so Django knows the field was updated
+                    pointInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+            }, function() {
+                alert('Geolocation failed. Please ensure you have given location permissions.');
+            });
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    };
+    toolsContainer.appendChild(findMeButton);
+
+    // 2. Create the Location Search Bar
+    const searchWrapper = document.createElement('div');
+    searchWrapper.style.flexGrow = '1';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search for a city or address...';
+    
+    const searchResults = document.createElement('ul');
+    searchResults.id = 'search-results';
+    searchResults.style.display = 'none';
+
+    searchWrapper.appendChild(searchInput);
+    searchWrapper.appendChild(searchResults);
+    toolsContainer.appendChild(searchWrapper);
+    
+    let debounceTimer;
+    searchInput.addEventListener('keyup', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() {
+            const query = searchInput.value;
+            if (query.length < 3) {
+                searchResults.innerHTML = '';
+                searchResults.style.display = 'none';
+                return;
+            }
+            // Use Nominatim (OpenStreetMap's free geocoder)
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    searchResults.innerHTML = '';
+                    if (data && data.length > 0) {
+                        searchResults.style.display = 'block';
+                        data.slice(0, 5).forEach(function(item) { // Show top 5 results
+                            const li = document.createElement('li');
+                            li.innerText = item.display_name;
+                            li.onclick = function() {
+                                const lon = parseFloat(item.lon);
+                                const lat = parseFloat(item.lat);
+                                const map = ol.Map.getMapById('id_center_map');
+                                const view = map.getView();
+                                const center = ol.proj.fromLonLat([lon, lat]);
+                                view.setCenter(center);
+                                view.setZoom(16);
+
+                                const pointInput = document.getElementById('id_center');
+                                if (pointInput) {
+                                    pointInput.value = `SRID=4326;POINT (${lon} ${lat})`;
+                                    pointInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                                searchResults.innerHTML = '';
+                                searchResults.style.display = 'none';
+                            };
+                            searchResults.appendChild(li);
+                        });
+                    } else {
+                        searchResults.style.display = 'none';
+                    }
+                });
+        }, 500); // Debounce for 500ms
+    });
+
+    // Insert our new tools right after the map widget
+    mapWidget.insertAdjacentElement('afterend', toolsContainer);
+}
+</script>
+{% endblock %}

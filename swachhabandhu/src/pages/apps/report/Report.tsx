@@ -1,552 +1,443 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+// src/components/ReportPage.tsx
 
-const styles = {
-  container: {
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    display: 'flex',
-    width: '100vw',
-    height: '100vh',
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#2c3e50',
-  },
-  mapWrapper: {
-    flex: 1,
-    height: '100%',
-  },
-  infoPanel: {
-    width: '380px',
-    height: '100%',
-    backgroundColor: '#34495e',
-    color: '#ecf0f1',
-    padding: '20px',
-    boxSizing: 'border-box',
-    overflowY: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '-5px 0 15px rgba(0,0,0,0.3)',
-    transition: 'width 0.3s ease',
-  },
-  panelHeader: {
-    borderBottom: '2px solid #7f8c8d',
-    paddingBottom: '15px',
-    marginBottom: '15px',
-    textAlign: 'center',
-  },
-  panelTitle: {
-    margin: '0',
-    fontSize: '24px',
-    color: '#1abc9c',
-  },
-  panelSubtitle: {
-    margin: '5px 0 0',
-    fontSize: '14px',
-    color: '#bdc3c7',
-  },
-  section: {
-    backgroundColor: '#2c3e50',
-    borderRadius: '8px',
-    padding: '15px',
-    marginBottom: '20px',
-  },
-  sectionTitle: {
-    margin: '0 0 10px 0',
-    fontSize: '18px',
-    color: '#16a085',
-    borderBottom: '1px solid #34495e',
-    paddingBottom: '8px',
-  },
-  dataRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '8px 0',
-    fontSize: '15px',
-    borderBottom: '1px solid #34495e',
-  },
-  dataLabel: {
-    fontWeight: 'bold',
-    color: '#95a5a6',
-  },
-  dataValue: {
-    color: '#ecf0f1',
-    fontWeight: '500',
-    maxWidth: '60%',
-    textAlign: 'right',
-  },
-  statusMessageBase: {
-    padding: '15px',
-    borderRadius: '8px',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: '16px',
-    margin: '0 0 20px 0',
-  },
-  statusLoading: {
-    backgroundColor: '#f39c12',
-    color: '#fff',
-  },
-  statusDenied: {
-    backgroundColor: '#e74c3c',
-    color: '#fff',
-  },
-  statusError: {
-    backgroundColor: '#c0392b',
-    color: '#fff',
-  },
-  statusSuccess: {
-    backgroundColor: '#27ae60',
-    color: '#fff',
-  },
-  geofenceItem: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 0',
-    borderBottom: '1px solid #34495e',
-  },
-  geofenceName: {
-    fontSize: '16px',
-    fontWeight: 'bold',
-  },
-  geofenceStatus: {
-    padding: '5px 10px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-  },
-  statusInside: {
-    backgroundColor: '#2ecc71',
-    color: '#fff',
-  },
-  statusOutside: {
-    backgroundColor: '#95a5a6',
-    color: '#2c3e50',
-  },
-  logContainer: {
-    flex: '1',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  logList: {
-    listStyleType: 'none',
-    padding: '0',
-    margin: '0',
-    flex: '1',
-    overflowY: 'auto',
-    maxHeight: '200px',
-  },
-  logItem: {
-    backgroundColor: '#34495e',
-    padding: '8px 12px',
-    borderRadius: '4px',
-    marginBottom: '8px',
-    fontSize: '13px',
-    display: 'flex',
-    justifyContent: 'space-between',
-  },
-  logText: {
-    color: '#bdc3c7',
-  },
-  logTimestamp: {
-    color: '#7f8c8d',
-    fontSize: '11px',
-    fontStyle: 'italic',
-  },
-  button: {
-    backgroundColor: '#1abc9c',
-    color: '#fff',
-    border: 'none',
-    padding: '12px 20px',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    width: '100%',
-    transition: 'background-color 0.3s ease',
-    marginTop: 'auto',
-  },
-  buttonHover: {
-    backgroundColor: '#16a085',
-  },
-  userMarkerSvg: {
-    width: '32px',
-    height: '32px',
-    fill: '#2980b9',
-    stroke: '#ffffff',
-    strokeWidth: '2',
-    filter: 'drop-shadow(0px 0px 3px rgba(0,0,0,0.7))',
-    transition: 'transform 0.5s linear',
-  },
-};
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+// --- INTEGRATION CHANGE ---
+// Import the centralized apiClient and the useAuth hook.
+import apiClient from '../../../Api'; // Adjust path if necessary
+import { useAuth } from '../../../context/AuthContext'; // Adjust path if necessary
 
-const GEOFENCE_ZONES = [
-  {
-    id: 'zone_a',
-    name: 'Headquarters',
-    center: [34.052235, -118.243683],
-    radius: 250,
-    color: 'blue',
-  },
-  {
-    id: 'zone_b',
-    name: 'Warehouse District',
-    center: [34.0384, -118.2355],
-    radius: 400,
-    color: 'orange',
-  },
-  {
-    id: 'zone_c',
-    name: 'Restricted Airspace',
-    center: [34.065, -118.25],
-    radius: 150,
-    color: 'red',
-  },
-];
+import { MapContainer, TileLayer, Marker, Circle, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { type LatLngExpression, Icon } from 'leaflet';
 
-const INITIAL_MAP_STATE = {
-  center: [34.0522, -118.2437],
-  zoom: 13,
-};
+// --- TYPE DEFINITIONS ---
+interface User {
+  id: number;
+  email: string;
+  full_name: string;
+}
 
-const haversineDistance = (coords1, coords2) => {
-  const toRad = (x) => (x * Math.PI) / 180;
+interface GeofenceZoneProperties {
+  id: number;
+  owner: User;
+  name: string;
+  description: string;
+  radius: number;
+  color: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
-  const R = 6371e3;
-  const lat1 = coords1[0];
-  const lon1 = coords1[1];
-  const lat2 = coords2[0];
-  const lon2 = coords2[1];
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const rLat1 = toRad(lat1);
-  const rLat2 = toRad(lat2);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
-
-  return distance;
-};
-
-const formatCoordinate = (coord) => coord?.toFixed(6) || 'N/A';
-const formatSpeed = (speed) => (speed ? `${(speed * 3.6).toFixed(2)} km/h` : '0.00 km/h');
-const formatAccuracy = (acc) => (acc ? `${acc.toFixed(2)} m` : 'N/A');
-const formatHeading = (head) => (head !== null && head >= 0 ? `${head.toFixed(1)}°` : 'N/A');
-
-const MapController = ({ center, zoom, recenterMap }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, zoom || map.getZoom());
-    }
-  }, [center, zoom, map]);
-
-  return null;
-};
-
-const UserMarker = ({ position, heading }) => {
-  if (!position) return null;
-
-  const iconAngle = heading || 0;
-  const userIcon = new L.DivIcon({
-    html: `<svg style="transform: rotate(${iconAngle}deg);" viewbox="0 0 24 24" width="32" height="32" fill="#2980b9" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" filter="drop-shadow(0px 0px 3px rgba(0,0,0,0.7))"><path d="M12 2L19 21 12 17 5 21 12 2z"></path></svg>`,
-    className: 'user-marker-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-  });
-
-  return (
-    <Marker position={position} icon={userIcon}>
-      <Popup>
-        You are here. <br /> Heading: {formatHeading(heading)}
-      </Popup>
-    </Marker>
-  );
-};
-
-const StatusDisplay = ({ status, error }) => {
-  const getStatusMessage = () => {
-    switch (status) {
-      case 'idle':
-        return { style: styles.statusLoading, text: 'Initializing Geolocation...' };
-      case 'loading':
-        return { style: styles.statusLoading, text: 'Acquiring your position...' };
-      case 'denied':
-        return { style: styles.statusDenied, text: 'Location access was denied. Please enable it in your browser settings.' };
-      case 'error':
-        return { style: styles.statusError, text: `Error: ${error?.message || 'An unknown error occurred.'}` };
-      case 'success':
-        return { style: styles.statusSuccess, text: 'Live position tracking active.' };
-      default:
-        return { style: {}, text: '' };
-    }
+interface GeofenceZoneFeature {
+  type: 'Feature';
+  id: number;
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
   };
+  properties: GeofenceZoneProperties;
+}
 
-  const { style, text } = getStatusMessage();
+interface GeofenceEvent {
+  id: number;
+  zone: number;
+  zone_name: string;
+  event_type: 'ENTER' | 'EXIT' | 'CHECK_IN';
+  location_coords: [number, number]; // [longitude, latitude]
+  timestamp: string;
+}
 
-  return <div style={{...styles.statusMessageBase, ...style}}>{text}</div>;
+interface NearbyZoneInfo {
+    zone: GeofenceZoneFeature;
+    distance: number;
+}
+
+interface SimulatedDevice {
+    position: [number, number];
+    isInsideZone: boolean;
+}
+
+type EventFilterType = 'ALL' | 'ENTER' | 'EXIT' | 'CHECK_IN';
+
+// --- UTILITY & HELPER FUNCTIONS ---
+function getHaversineDistance([lat1, lon1]: [number, number], [lat2, lon2]: [number, number]): number {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// --- LEAFLET ICONS & HELPERS ---
+const defaultIcon = new Icon({ iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', shadowSize: [41, 41] });
+const eventIcon = new Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', shadowSize: [41, 41] });
+const hoveredEventIcon = new Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', iconSize: [35, 57], iconAnchor: [17, 57], popupAnchor: [1, -48], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', shadowSize: [57, 57] });
+const analysisIcon = new Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', shadowSize: [41, 41] });
+const simulationIcon = new Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', shadowSize: [41, 41] });
+
+const MapController: React.FC<{ center: LatLngExpression }> = ({ center }) => {
+    const map = useMap();
+    useEffect(() => { map.flyTo(center, 13); }, [center, map]);
+    return null;
 };
 
-const GeofenceStatusList = ({ geofenceStatus }) => (
-  <div style={styles.section}>
-    <h3 style={styles.sectionTitle}>Geofence Status</h3>
-    {GEOFENCE_ZONES.map((zone) => (
-      <div key={zone.id} style={styles.geofenceItem}>
-        <span style={{ ...styles.geofenceName, color: zone.color }}>
-          {zone.name}
-        </span>
-        <span style={{
-          ...styles.geofenceStatus,
-          ...(geofenceStatus[zone.id] ? styles.statusInside : styles.statusOutside)
-        }}>
-          {geofenceStatus[zone.id] ? 'INSIDE' : 'OUTSIDE'}
-        </span>
-      </div>
-    ))}
-  </div>
-);
+const MapClickHandler: React.FC<{ onMapClick: (coords: [number, number]) => void, isEnabled: boolean }> = ({ onMapClick, isEnabled }) => {
+    const map = useMap();
+    useMapEvents({ click(e) { if (isEnabled) onMapClick([e.latlng.lat, e.latlng.lng]); } });
+    useEffect(() => {
+        const mapContainer = map.getContainer();
+        mapContainer.style.cursor = isEnabled ? 'crosshair' : '';
+        return () => { mapContainer.style.cursor = ''; };
+    }, [isEnabled, map]);
+    return null;
+};
 
-const EventLog = ({ logs }) => (
-  <div style={{ ...styles.section, ...styles.logContainer }}>
-    <h3 style={styles.sectionTitle}>Event Log</h3>
-    <ul style={styles.logList}>
-      {logs.length === 0 ? (
-        <li style={styles.logItem}>
-          <span style={styles.logText}>No geofence events yet.</span>
-        </li>
-      ) : (
-        logs.map((log) => (
-          <li key={log.id} style={styles.logItem}>
-            <span style={styles.logText}>{log.message}</span>
-            <span style={styles.logTimestamp}>{log.timestamp}</span>
-          </li>
-        ))
-      )}
-    </ul>
-  </div>
-);
+// --- MAIN COMPONENT ---
+const ReportPage: React.FC = () => {
+    const { isAuthenticated, user } = useAuth();
 
-const PositionDetails = ({ position, accuracy, speed, heading }) => (
-  <div style={styles.section}>
-    <h3 style={styles.sectionTitle}>Live Position Data</h3>
-    <div style={styles.dataRow}>
-      <span style={styles.dataLabel}>Latitude:</span>
-      <span style={styles.dataValue}>{formatCoordinate(position?.[0])}</span>
-    </div>
-    <div style={styles.dataRow}>
-      <span style={styles.dataLabel}>Longitude:</span>
-      <span style={styles.dataValue}>{formatCoordinate(position?.[1])}</span>
-    </div>
-    <div style={styles.dataRow}>
-      <span style={styles.dataLabel}>Accuracy:</span>
-      <span style={styles.dataValue}>{formatAccuracy(accuracy)}</span>
-    </div>
-    <div style={styles.dataRow}>
-      <span style={styles.dataLabel}>Speed:</span>
-      <span style={styles.dataValue}>{formatSpeed(speed)}</span>
-    </div>
-    <div style={{...styles.dataRow, borderBottom: 'none'}}>
-      <span style={styles.dataLabel}>Heading:</span>
-      <span style={styles.dataValue}>{formatHeading(heading)}</span>
-    </div>
-  </div>
-);
+    // State Management
+    const [zones, setZones] = useState<GeofenceZoneFeature[]>([]);
+    const [selectedZone, setSelectedZone] = useState<GeofenceZoneFeature | null>(null);
+    const [events, setEvents] = useState<GeofenceEvent[]>([]);
+    const [dashboardStats, setDashboardStats] = useState<any | null>(null);
+    const [editingZone, setEditingZone] = useState<GeofenceZoneFeature | null>(null);
+    const [filters, setFilters] = useState({ name: '', min_radius: '', max_radius: '', is_active: '' });
+    const [eventFilter, setEventFilter] = useState<EventFilterType>('ALL');
+    const [hoveredEventId, setHoveredEventId] = useState<number | null>(null);
+    const [loading, setLoading] = useState<{ zones: boolean, events: boolean, stats: boolean }>({ zones: true, events: false, stats: true });
+    const [error, setError] = useState<string | null>(null);
+    const [isAnalysisMode, setIsAnalysisMode] = useState<boolean>(false);
+    const [analysisPoint, setAnalysisPoint] = useState<[number, number] | null>(null);
+    const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
+    const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
+    const [simulatedDevice, setSimulatedDevice] = useState<SimulatedDevice | null>(null);
+    const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const initialFormState = useMemo(() => ({ name: '', description: '', radius: 1000, color: '#3388ff', is_active: true, center_lat: '', center_lon: '' }), []);
+    const [zoneFormData, setZoneFormData] = useState(initialFormState);
 
-const ReportPage = () => {
-  const [position, setPosition] = useState(null);
-  const [accuracy, setAccuracy] = useState(null);
-  const [speed, setSpeed] = useState(null);
-  const [heading, setHeading] = useState(null);
-  const [status, setStatus] = useState('idle');
-  const [error, setError] = useState(null);
-  const [mapCenter, setMapCenter] = useState(INITIAL_MAP_STATE.center);
-  const [zoom, setZoom] = useState(INITIAL_MAP_STATE.zoom);
-  const [eventLog, setEventLog] = useState([]);
-  const [geofenceStatus, setGeofenceStatus] = useState(
-    GEOFENCE_ZONES.reduce((acc, zone) => ({ ...acc, [zone.id]: false }), {})
-  );
+    // API & Data Fetching
+    const fetchZones = useCallback(async () => {
+        if (!isAuthenticated) return;
+        setLoading(prev => ({ ...prev, zones: true }));
+        setError(null);
+        try {
+            const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== ''));
+            const response = await apiClient.get<{ features: GeofenceZoneFeature[] }>(`/geofences/?${params.toString()}`);
+            setZones(response.data.features || []);
+        } catch (err: any) {
+            setError(err.response?.status === 401 ? 'Your session has expired. Please log in again.' : 'Failed to fetch geofence zones.');
+            setZones([]);
+        } finally {
+            setLoading(prev => ({ ...prev, zones: false }));
+        }
+    }, [isAuthenticated, filters]);
 
-  const watchId = useRef(null);
-  const isFirstUpdate = useRef(true);
-  const geofenceStatusRef = useRef(geofenceStatus);
-  // ADDED: A ref to hold a simple counter for unique log IDs.
-  const logIdCounter = useRef(0);
+    const fetchEventsForZone = useCallback(async (zoneId: number) => {
+        if (!isAuthenticated) return;
+        setLoading(prev => ({ ...prev, events: true }));
+        try {
+            const response = await apiClient.get<{ results: GeofenceEvent[] } | GeofenceEvent[]>(`/geofences/${zoneId}/events/`);
+            setEvents('results' in response.data ? response.data.results : response.data);
+        } catch (err) {
+            setError('Failed to fetch events for this zone.');
+        } finally {
+            setLoading(prev => ({ ...prev, events: false }));
+        }
+    }, [isAuthenticated]);
 
-  useEffect(() => {
-    geofenceStatusRef.current = geofenceStatus;
-  }, [geofenceStatus]);
+    const fetchDashboardStats = useCallback(async () => {
+        if (!isAuthenticated) return;
+        setLoading(prev => ({ ...prev, stats: true }));
+        try {
+            const response = await apiClient.get('/geofences/statistics/');
+            setDashboardStats(response.data);
+        } catch (err) {
+             console.error("Could not fetch dashboard statistics", err);
+        } finally {
+            setLoading(prev => ({ ...prev, stats: false }));
+        }
+    }, [isAuthenticated]);
 
-  const addLog = useCallback((message) => {
-    setEventLog(prevLog => {
-      // CHANGED: Increment the counter before creating the log item.
-      logIdCounter.current += 1;
-      const newLog = {
-        // CHANGED: Use the unique counter value for the ID.
-        id: logIdCounter.current,
-        message,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      return [newLog, ...prevLog].slice(0, 50);
-    });
-  }, []);
+    // Lifecycle & Data Effects
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchZones();
+            fetchDashboardStats();
+        } else {
+            setZones([]);
+            setDashboardStats(null);
+            setSelectedZone(null);
+        }
+    }, [isAuthenticated, fetchZones, fetchDashboardStats]);
+    
+    useEffect(() => {
+        if (selectedZone) {
+            fetchEventsForZone(selectedZone.id);
+        } else {
+            setEvents([]);
+        }
+    }, [selectedZone, fetchEventsForZone]);
 
-  const handlePositionSuccess = useCallback((pos) => {
-    const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-    const currentPosition = [latitude, longitude];
+    useEffect(() => {
+        if (editingZone) {
+            setZoneFormData({
+                name: editingZone.properties.name, description: editingZone.properties.description,
+                radius: editingZone.properties.radius, color: editingZone.properties.color,
+                is_active: editingZone.properties.is_active,
+                center_lat: editingZone.geometry.coordinates[1].toString(),
+                center_lon: editingZone.geometry.coordinates[0].toString(),
+            });
+        } else {
+            setZoneFormData(initialFormState);
+        }
+    }, [editingZone, initialFormState]);
 
-    setStatus('success');
-    setPosition(currentPosition);
-    setAccuracy(accuracy);
-    setSpeed(speed);
-    setHeading(heading);
+    // Live Simulation Effect
+    useEffect(() => {
+        if (simulationRunning && selectedZone) {
+            let deviceState = simulatedDevice;
+            if (!deviceState) {
+                const startPos: [number, number] = [selectedZone.geometry.coordinates[1] + 0.02, selectedZone.geometry.coordinates[0] + 0.02];
+                const startDistance = getHaversineDistance(startPos, [selectedZone.geometry.coordinates[1], selectedZone.geometry.coordinates[0]]) * 1000;
+                deviceState = { position: startPos, isInsideZone: startDistance <= selectedZone.properties.radius };
+                setSimulatedDevice(deviceState);
+            }
+            simulationIntervalRef.current = setInterval(() => {
+                setSimulatedDevice(prevDevice => {
+                    if (!prevDevice || !selectedZone) return null;
+                    const newPos: [number, number] = [prevDevice.position[0] - 0.0005, prevDevice.position[1] - 0.0005];
+                    const zoneCenter: [number, number] = [selectedZone.geometry.coordinates[1], selectedZone.geometry.coordinates[0]];
+                    const distanceToCenter = getHaversineDistance(newPos, zoneCenter) * 1000;
+                    const isNowInside = distanceToCenter <= selectedZone.properties.radius;
+                    if (isNowInside && !prevDevice.isInsideZone) {
+                        apiClient.post(`/geofences/${selectedZone.id}/log-event/`, { longitude: newPos[1], latitude: newPos[0], event_type: 'ENTER' }).then(() => { fetchEventsForZone(selectedZone.id); fetchDashboardStats(); });
+                    } else if (!isNowInside && prevDevice.isInsideZone) {
+                        apiClient.post(`/geofences/${selectedZone.id}/log-event/`, { longitude: newPos[1], latitude: newPos[0], event_type: 'EXIT' }).then(() => { fetchEventsForZone(selectedZone.id); fetchDashboardStats(); });
+                    }
+                    return { position: newPos, isInsideZone: isNowInside };
+                });
+            }, 2000);
+        } else {
+            if (simulationIntervalRef.current) clearInterval(simulationIntervalRef.current);
+        }
+        return () => { if (simulationIntervalRef.current) clearInterval(simulationIntervalRef.current); };
+    }, [simulationRunning, selectedZone, fetchEventsForZone, simulatedDevice, fetchDashboardStats]);
 
-    if (isFirstUpdate.current) {
-      setMapCenter(currentPosition);
-      setZoom(16);
-      isFirstUpdate.current = false;
-      addLog('Successfully acquired initial position.');
-    }
+    // Handlers
+    const handleAnalysisClick = useCallback((coords: [number, number]) => {
+        setAnalysisPoint(coords);
+        setIsAnalysisMode(false);
+    }, []);
 
-    const newGeofenceStatus = {};
-    GEOFENCE_ZONES.forEach(zone => {
-      const distance = haversineDistance(currentPosition, zone.center);
-      const isInside = distance <= zone.radius;
-      newGeofenceStatus[zone.id] = isInside;
+    const nearbyZones = useMemo((): NearbyZoneInfo[] => {
+        if (!analysisPoint || zones.length === 0) return [];
+        return zones.map(zone => ({ zone, distance: getHaversineDistance(analysisPoint, [zone.geometry.coordinates[1], zone.geometry.coordinates[0]]) })).sort((a, b) => a.distance - b.distance);
+    }, [analysisPoint, zones]);
 
-      const wasInside = geofenceStatusRef.current[zone.id];
-      if (isInside && !wasInside) {
-        addLog(`Entered ${zone.name}.`);
-      } else if (!isInside && wasInside) {
-        addLog(`Exited ${zone.name}.`);
-      }
-    });
-    setGeofenceStatus(newGeofenceStatus);
-  }, [addLog]);
-
-  const handlePositionError = useCallback((err) => {
-    if (err.code === 1) {
-      setStatus('denied');
-      addLog('Location access denied by user.');
-    } else {
-      setStatus('error');
-      setError(err);
-      addLog(`Geolocation error: ${err.message}`);
-    }
-  }, [addLog]);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setStatus('error');
-      setError({ message: "Geolocation is not supported by your browser." });
-      addLog('Geolocation not supported.');
-      return;
-    }
-
-    setStatus('loading');
-    addLog('Requesting location access...');
-
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+    const handleSelectZone = (zone: GeofenceZoneFeature) => {
+        setSelectedZone(zone);
+        setEditingZone(null);
+        setAnalysisPoint(null);
+        if (simulationRunning) setSimulationRunning(false);
     };
 
-    watchId.current = navigator.geolocation.watchPosition(
-      handlePositionSuccess,
-      handlePositionError,
-      options
+    const handleSaveZone = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingZone) return;
+        const payload = {
+            name: zoneFormData.name, description: zoneFormData.description, radius: parseFloat(zoneFormData.radius as any), color: zoneFormData.color, is_active: zoneFormData.is_active,
+            center: { type: 'Point', coordinates: [parseFloat(zoneFormData.center_lon), parseFloat(zoneFormData.center_lat)] }
+        };
+        try {
+            await apiClient.patch(`/geofences/${editingZone.id}/`, payload);
+            setEditingZone(null);
+            fetchZones();
+            fetchDashboardStats();
+        } catch (err: any) {
+            setError(`Failed to update zone: ${JSON.stringify(err.response?.data)}`);
+        }
+    };
+
+    const handleLogEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedZone) return;
+        const formData = new FormData(e.currentTarget);
+        const eventPayload = {
+            longitude: parseFloat(formData.get('longitude') as string), latitude: parseFloat(formData.get('latitude') as string), event_type: formData.get('event_type') as string,
+        };
+        try {
+            await apiClient.post(`/geofences/${selectedZone.id}/log-event/`, eventPayload);
+            fetchEventsForZone(selectedZone.id);
+            fetchDashboardStats();
+            e.currentTarget.reset();
+        } catch (err) {
+            setError('Failed to log event. Check coordinates.');
+        }
+    };
+    
+    const filteredEvents = useMemo(() => {
+        if (eventFilter === 'ALL') return events;
+        return events.filter(event => event.event_type === eventFilter);
+    }, [events, eventFilter]);
+
+    const mapCenter = useMemo((): LatLngExpression => {
+        if (selectedZone) return [selectedZone.geometry.coordinates[1], selectedZone.geometry.coordinates[0]];
+        if (zones.length > 0) return [zones[0].geometry.coordinates[1], zones[0].geometry.coordinates[0]];
+        return [40.7128, -74.0060];
+    }, [selectedZone, zones]);
+    
+    // --- RENDER LOGIC ---
+    if (!isAuthenticated) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-gray-100">
+                <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
+                    <p className="text-gray-600">Please log in to access the Geofence Operations dashboard.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const renderSidebarContent = () => (
+        <div className="p-4 space-y-6 overflow-y-auto">
+            <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Welcome, {user?.full_name || 'Operator'}!</h3>
+                {loading.stats ? <p className="text-sm text-gray-500">Loading dashboard stats...</p> : dashboardStats ? (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                            <div className="bg-gray-100 p-3 rounded-lg"><p className="text-2xl font-bold text-blue-600">{dashboardStats.total_zones}</p><p className="text-sm text-gray-600">Total Zones</p></div>
+                            <div className="bg-gray-100 p-3 rounded-lg"><p className="text-2xl font-bold text-green-600">{dashboardStats.active_zones}</p><p className="text-sm text-gray-600">Active Zones</p></div>
+                        </div>
+                        <div className="text-sm bg-gray-100 p-3 rounded-lg">
+                            <h4 className="font-semibold mb-1">Events by Type:</h4>
+                            <div className="flex justify-between"><span>ENTER:</span> <strong>{dashboardStats.event_type_counts.ENTER || 0}</strong></div>
+                            <div className="flex justify-between"><span>EXIT:</span> <strong>{dashboardStats.event_type_counts.EXIT || 0}</strong></div>
+                            <div className="flex justify-between"><span>CHECK_IN:</span> <strong>{dashboardStats.event_type_counts.CHECK_IN || 0}</strong></div>
+                        </div>
+                    </div>
+                ) : <p className="text-sm text-red-500">Could not load stats.</p>}
+            </div>
+            <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Filter Zones</h3>
+                <form onSubmit={e => { e.preventDefault(); fetchZones(); }} className="space-y-2">
+                    <input type="text" placeholder="Name contains..." value={filters.name} onChange={e => setFilters({...filters, name: e.target.value})} className="w-full rounded-md border-gray-300 shadow-sm text-sm"/>
+                    <button type="submit" className="w-full py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">Apply Filter</button>
+                </form>
+            </div>
+            <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">My Zones ({zones.length})</h3>
+                <ul className="h-48 overflow-y-auto divide-y divide-gray-200 border rounded-md">
+                    {loading.zones ? <p className="p-2 text-sm text-gray-500">Loading zones...</p> : zones.map(zone => (
+                        <li key={zone.id} onClick={() => handleSelectZone(zone)} className={`p-2 cursor-pointer hover:bg-gray-100 ${selectedZone?.id === zone.id ? 'bg-blue-100' : ''}`}>
+                            <h4 className="font-semibold text-gray-900">{zone.properties.name}</h4>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </div>
     );
 
-    return () => {
-      if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current);
-      }
+    const renderDetailPanel = () => {
+        if (editingZone) {
+            return (
+                <div className="p-4">
+                    <h3 className="text-xl font-bold text-blue-600 mb-4">Edit: {editingZone.properties.name}</h3>
+                    <form onSubmit={handleSaveZone} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Name</label>
+                            <input type="text" value={zoneFormData.name} onChange={e => setZoneFormData({...zoneFormData, name: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Radius (m)</label>
+                            <input type="number" value={zoneFormData.radius} onChange={e => setZoneFormData({...zoneFormData, radius: Number(e.target.value)})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div><label className="block text-sm font-medium text-gray-700">Latitude</label><input type="number" step="any" value={zoneFormData.center_lat} onChange={e => setZoneFormData({...zoneFormData, center_lat: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required /></div>
+                            <div><label className="block text-sm font-medium text-gray-700">Longitude</label><input type="number" step="any" value={zoneFormData.center_lon} onChange={e => setZoneFormData({...zoneFormData, center_lon: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required /></div>
+                        </div>
+                        <div className="flex items-center space-x-4"><label className="block text-sm font-medium text-gray-700">Color</label><input type="color" value={zoneFormData.color} onChange={e => setZoneFormData({...zoneFormData, color: e.target.value})} className="h-10 w-10 rounded-md border-gray-300 shadow-sm"/></div>
+                        <div className="flex items-center"><input type="checkbox" checked={zoneFormData.is_active} onChange={e => setZoneFormData({...zoneFormData, is_active: e.target.checked})} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" /><label className="ml-2 block text-sm text-gray-900">Is Active</label></div>
+                        <div className="flex space-x-2"><button type="submit" className="flex-1 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">Save Changes</button><button type="button" onClick={() => setEditingZone(null)} className="flex-1 inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button></div>
+                    </form>
+                </div>
+            );
+        }
+
+        if (analysisPoint) {
+            return (
+                <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Proximity Analysis</h3>
+                    <p className="text-sm text-gray-600 mb-3">Zones ranked by distance from the marked point.</p>
+                    <button onClick={() => setAnalysisPoint(null)} className="w-full mb-3 py-2 px-4 text-sm rounded-md bg-gray-200 hover:bg-gray-300">Clear Analysis</button>
+                    <ul className="max-h-96 overflow-y-auto divide-y">
+                        {nearbyZones.map(({zone, distance}) => (
+                            <li key={zone.id} className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleSelectZone(zone)}><p className="font-semibold">{zone.properties.name}</p><p className="text-sm text-blue-600">{distance.toFixed(2)} km away</p></li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        if (selectedZone) {
+            return (
+                <div className="p-4 space-y-6 overflow-y-auto">
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-800">{selectedZone.properties.name}</h3>
+                        <p className="text-sm text-gray-500">Radius: {selectedZone.properties.radius}m | Status: {selectedZone.properties.is_active ? 'Active' : 'Inactive'}</p>
+                        <div className="mt-4 flex space-x-2">
+                            <button onClick={() => setEditingZone(selectedZone)} className="flex-1 py-2 text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700">Edit</button>
+                            <button onClick={() => setIsLiveMode(!isLiveMode)} className={`flex-1 py-2 text-sm font-medium rounded-md text-white ${isLiveMode ? 'bg-red-600 hover:bg-red-700' : 'bg-purple-600 hover:bg-purple-700'}`}>{isLiveMode ? 'Exit Live Mode' : 'Live Mode'}</button>
+                        </div>
+                    </div>
+                    {isLiveMode && (
+                        <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-md">
+                            <h4 className="font-semibold text-purple-800">Live Simulation</h4><p className="text-sm text-purple-700 mb-3">Simulates a device moving towards the zone center.</p>
+                            <button onClick={() => setSimulationRunning(!simulationRunning)} className={`w-full py-2 text-sm font-medium rounded-md text-white ${simulationRunning ? 'bg-red-500' : 'bg-green-500'}`}>{simulationRunning ? 'Stop Simulation' : 'Start Simulation'}</button>
+                        </div>
+                    )}
+                    <div>
+                        <h4 className="font-semibold text-gray-800 mb-2">Events</h4>
+                        <div className="flex space-x-1 p-1 bg-gray-200 rounded-md mb-2">{ (['ALL', 'ENTER', 'EXIT', 'CHECK_IN'] as EventFilterType[]).map(type => (<button key={type} onClick={() => setEventFilter(type)} className={`flex-1 text-xs py-1 rounded-md ${eventFilter === type ? 'bg-white shadow' : 'bg-transparent'}`}>{type}</button>))}</div>
+                        <ul className="h-48 overflow-y-auto divide-y border rounded-md">
+                           {loading.events ? <p className="p-2 text-sm text-gray-500">Loading events...</p> : filteredEvents.map(event => (<li key={event.id} onMouseEnter={() => setHoveredEventId(event.id)} onMouseLeave={() => setHoveredEventId(null)} className="p-2 text-sm hover:bg-blue-50"><p className="font-semibold">{event.event_type}</p><p className="text-xs text-gray-500">{new Date(event.timestamp).toLocaleString()}</p></li>))}
+                        </ul>
+                    </div>
+                </div>
+            );
+        }
+        
+        return (<div className="p-4 text-center text-gray-500 flex items-center justify-center h-full"><p>Select a zone from the list to view its details, or use a tool from the top bar.</p></div>);
     };
-  }, [handlePositionSuccess, handlePositionError, addLog]);
 
-  const recenterMap = useCallback(() => {
-    if (position) {
-      setMapCenter(position);
-      setZoom(16);
-      addLog('Map recentered to user position.');
-    }
-  }, [position, addLog]);
-
-  const [isHover, setIsHover] = useState(false);
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.infoPanel}>
-        <div style={styles.panelHeader}>
-          <h1 style={styles.panelTitle}>GeoTrack Pro</h1>
-          <p style={styles.panelSubtitle}>Live Position & Geofence Monitor</p>
+    return (
+        <div className="h-screen w-screen flex flex-col font-sans bg-gray-50">
+            <header className="bg-white border-b p-4 shadow-sm z-20 flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-gray-800">Geofence Operations</h1>
+                <div className="flex items-center space-x-4"><button onClick={() => { setIsAnalysisMode(!isAnalysisMode); setSelectedZone(null); }} className={`py-2 px-4 text-sm font-medium rounded-md border ${isAnalysisMode ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300'}`}>Analyze Point</button></div>
+            </header>
+            {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 z-10" role="alert"><p>{error}</p></div>}
+            <div className="flex flex-grow overflow-hidden">
+                <aside className="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">{renderSidebarContent()}</aside>
+                <aside className="w-96 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">{renderDetailPanel()}</aside>
+                <main className="flex-grow h-full">
+                    <MapContainer center={mapCenter} zoom={10} scrollWheelZoom={true} className="h-full w-full">
+                        <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+                        <MapController center={mapCenter} />
+                        <MapClickHandler onMapClick={handleAnalysisClick} isEnabled={isAnalysisMode} />
+                        {zones.map(zone => {
+                             const center: LatLngExpression = [zone.geometry.coordinates[1], zone.geometry.coordinates[0]];
+                             return (<React.Fragment key={`zone-${zone.id}`}><Marker position={center} icon={defaultIcon} eventHandlers={{ click: () => handleSelectZone(zone) }} /><Circle center={center} radius={zone.properties.radius} pathOptions={{ color: zone.properties.color, fillColor: zone.properties.color, fillOpacity: selectedZone?.id === zone.id ? 0.5 : 0.2, weight: selectedZone?.id === zone.id ? 3 : 1 }} eventHandlers={{ click: () => handleSelectZone(zone) }} /></React.Fragment>)
+                        })}
+                        {selectedZone && filteredEvents.map(event => (<Marker key={`event-${event.id}`} position={[event.location_coords[1], event.location_coords[0]]} icon={hoveredEventId === event.id ? hoveredEventIcon : eventIcon} zIndexOffset={hoveredEventId === event.id ? 1000 : 0}/>))}
+                        {analysisPoint && <Marker position={analysisPoint} icon={analysisIcon} />}
+                        {isLiveMode && simulatedDevice && <Marker position={simulatedDevice.position} icon={simulationIcon} />}
+                    </MapContainer>
+                </main>
+            </div>
         </div>
-
-        <StatusDisplay status={status} error={error} />
-        
-        {status === 'success' && (
-          <PositionDetails 
-            position={position}
-            accuracy={accuracy}
-            speed={speed}
-            heading={heading}
-          />
-        )}
-        
-        <GeofenceStatusList geofenceStatus={geofenceStatus} />
-        
-        <EventLog logs={eventLog} />
-
-        <button 
-          style={isHover ? {...styles.button, ...styles.buttonHover} : styles.button}
-          onClick={recenterMap}
-          onMouseEnter={() => setIsHover(true)}
-          onMouseLeave={() => setIsHover(false)}
-          disabled={!position}
-        >
-          Recenter on Me
-        </button>
-      </div>
-
-      <div style={styles.mapWrapper}>
-        <MapContainer center={INITIAL_MAP_STATE.center} zoom={INITIAL_MAP_STATE.zoom} style={{ height: '100%', width: '100%', backgroundColor: '#1d2c3b' }}>
-          <MapController center={mapCenter} zoom={zoom} />
-          <TileLayer
-            attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          />
-          
-          <UserMarker position={position} heading={heading} />
-
-          {GEOFENCE_ZONES.map(zone => (
-            <Circle
-              key={zone.id}
-              center={zone.center}
-              radius={zone.radius}
-              pathOptions={{
-                color: zone.color,
-                fillColor: zone.color,
-                fillOpacity: geofenceStatus[zone.id] ? 0.3 : 0.15,
-                weight: 2,
-              }}
-            >
-              <Popup>
-                <b>{zone.name}</b><br/>
-                Radius: {zone.radius}m
-              </Popup>
-            </Circle>
-          ))}
-        </MapContainer>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ReportPage;

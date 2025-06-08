@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,6 +24,7 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
+    # 'jazzmin',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -31,14 +32,23 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
+    # GeoDjango
+    'django.contrib.gis',
+
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'rest_framework_gis',
+    'drf_spectacular',
+    'django_filters',
+
+
     # Your apps
     'users',
     'issues',
+    'geofencing',
 ]
 
 MIDDLEWARE = [
@@ -59,7 +69,7 @@ ROOT_URLCONF = "bandhubackend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, 'templates')],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -78,10 +88,25 @@ WSGI_APPLICATION = "bandhubackend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
+# geo spatial data for storing geo data
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': config("PGDATABASE"),
+        'USER': config("PGUSER"),
+        'PASSWORD': config("PGPASSWORD"),
+        'HOST': config("PGHOST"),
+        'PORT': config("PGPORT"),
+        'OPTIONS': {
+            'sslmode': 'require', 
+        },
     }
 }
 
@@ -141,12 +166,28 @@ DEFAULT_FROM_EMAIL='anurag6569201@gmail.com'
 
 # REST Framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated', 
-    )
+        'rest_framework.authentication.TokenAuthentication', # Added for token-based auth
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', # Secure by default
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 25,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# --- DRF Spectacular (API Docs) Configuration ---
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'GeoFence Pro API',
+    'DESCRIPTION': 'A comprehensive API for creating and managing geofence zones and logging events.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 # Simple JWT settings
@@ -194,3 +235,5 @@ FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174')
 
 
 GEO_FENCE_RADIUS = 500
+GDAL_LIBRARY_PATH='/opt/homebrew/opt/gdal/lib/libgdal.dylib'
+GEOS_LIBRARY_PATH="/opt/homebrew/opt/geos/lib/libgeos_c.dylib"
