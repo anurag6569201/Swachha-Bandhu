@@ -35,6 +35,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
     full_name = models.CharField(_('full name'), max_length=150)
+    total_points = models.IntegerField(default=0, help_text="Denormalized total points for performance.")
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

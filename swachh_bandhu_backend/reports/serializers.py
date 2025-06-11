@@ -1,44 +1,50 @@
-# reports/serializers.py
 from rest_framework import serializers
-from .models import Report, ReportMedia, Location
+from .models import Report, ReportMedia
+from locations.models import Location
 from .services import is_user_within_geofence
-from users.serializers import UserSerializer # To display user info in reads
+from users.serializers import UserSerializer
+
+# --- READ/DISPLAY Serializers ---
 
 class ReportMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportMedia
         fields = ['id', 'media_type', 'file']
+        read_only_fields = ['id', 'media_type', 'file']
 
-
-# --- READ Serializer ---
 class ReportReadSerializer(serializers.ModelSerializer):
-    """Serializer for reading/listing reports."""
+    """Serializer for reading/listing reports with detailed, nested data."""
     user = UserSerializer(read_only=True)
     media = ReportMediaSerializer(many=True, read_only=True)
     location_name = serializers.CharField(source='location.name', read_only=True)
+    # Shows how many verifications this report has received
+    verification_count = serializers.IntegerField(source='verifications.count', read_only=True)
 
     class Meta:
         model = Report
         fields = [
             'id', 'user', 'location', 'location_name', 'issue_type',
-            'description', 'status', 'media', 'created_at'
+            'description', 'status', 'media', 'created_at', 'verification_count',
+            'verifies_report'
         ]
+        read_only_fields = fields
 
 
-# --- WRITE/CREATE Serializer ---
+# --- WRITE/ACTION Serializers ---
+
 class ReportCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating new reports. Includes geo-fencing validation."""
-    # Frontend will send the location's UUID
-    location = serializers.UUIDField(write_only=True)
-    # Frontend must provide the user's current coordinates for validation
-    user_latitude = serializers.DecimalField(max_digits=9, decimal_places=6, write_only=True)
-    user_longitude = serializers.DecimalField(max_digits=10, decimal_places=6, write_only=True)
+    """
+    Serializer for creating new reports. Includes geo-fencing validation.
+    Also used as the base for the 'verify' action.
+    """
+    location = serializers.UUIDField(write_only=True, required=True)
+    user_latitude = serializers.DecimalField(max_digits=9, decimal_places=6, write_only=True, required=True)
+    user_longitude = serializers.DecimalField(max_digits=10, decimal_places=6, write_only=True, required=True)
     
-    # Allow multiple file uploads
     media_files = serializers.ListField(
-        child=serializers.FileField(max_length=1000, allow_empty_file=False, use_url=False),
+        child=serializers.FileField(allow_empty_file=False),
         write_only=True,
-        required=False # Media is optional
+        required=False
     )
 
     class Meta:
@@ -56,46 +62,54 @@ class ReportCreateSerializer(serializers.ModelSerializer):
         try:
             location = Location.objects.get(id=location_id)
         except Location.DoesNotExist:
-            raise serializers.ValidationError("Location not found.")
+            raise serializers.ValidationError({"location": "Location with this ID not found."})
         
-        # --- Geo-fencing Check ---
         if not is_user_within_geofence(user_lat, user_lon, location.latitude, location.longitude):
             raise serializers.ValidationError(
-                "You are too far from the location to submit a report. Please move closer and try again."
+                "Geo-fence check failed. You are too far from the location to submit a report."
             )
-
-        # Store the validated location object to use in create()
+        
+        # Pass the validated location object to the view via context for use in create()
         self.context['location_obj'] = location
         return data
 
     def create(self, validated_data):
+        # Pop the non-model fields before creating the report instance
         location = self.context['location_obj']
-        user = self.context['request'].user
         media_files = validated_data.pop('media_files', [])
-        
-        # Remove geo-fencing fields as they are not on the Report model
-        validated_data.pop('user_latitude', None)
-        validated_data.pop('user_longitude', None)
+        validated_data.pop('user_latitude')
+        validated_data.pop('user_longitude')
         
         report = Report.objects.create(
-            user=user,
+            user=self.context['request'].user,
             location=location,
             **validated_data
         )
 
-        # Create ReportMedia objects for each uploaded file
+        media_to_create = []
         for file in media_files:
-            # Basic media type detection
-            media_type = 'IMAGE' # Default
+            media_type = 'IMAGE'
             if 'video' in file.content_type:
                 media_type = 'VIDEO'
             elif 'audio' in file.content_type:
                 media_type = 'AUDIO'
-            
-            ReportMedia.objects.create(report=report, file=file, media_type=media_type)
-
-        # Here we will later call the gamification service
-        # from gamification.services import award_points_for_report
-        # award_points_for_report(user, report)
+            media_to_create.append(ReportMedia(report=report, file=file, media_type=media_type))
         
+        if media_to_create:
+            ReportMedia.objects.bulk_create(media_to_create)
+            
         return report
+
+
+class ModerateReportSerializer(serializers.ModelSerializer):
+    """A simple serializer for updating only the report's status by a moderator."""
+    class Meta:
+        model = Report
+        fields = ['status']
+        extra_kwargs = {
+            'status': {'choices': [
+                Report.ReportStatus.VERIFIED,
+                Report.ReportStatus.REJECTED,
+                Report.ReportStatus.ACTIONED
+            ]}
+        }

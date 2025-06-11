@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'locations.apps.LocationsConfig',
     'reports.apps.ReportsConfig', 
+    'gamification.apps.GamificationConfig', 
+    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -202,3 +204,17 @@ MAP_WIDGETS = {
 
 GDAL_LIBRARY_PATH = '/opt/homebrew/Cellar/gdal/3.11.0_2/lib/libgdal.dylib'
 GEOS_LIBRARY_PATH = '/opt/homebrew/Cellar/geos/3.13.1/lib/libgeos_c.dylib'
+
+POINTS_FOR_INITIAL_REPORT = config('POINTS_FOR_INITIAL_REPORT', default=100, cast=int)
+POINTS_FOR_PEER_VERIFICATION = config('POINTS_FOR_PEER_VERIFICATION', default=50, cast=int)
+
+
+
+# --- Celery Configuration ---
+# Using Redis as the message broker
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE # Use Django's timezone
