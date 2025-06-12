@@ -3,16 +3,23 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import DashboardPage from '../pages/apps/dashboard/Dashboard';
 import NotFoundPage from '../pages/landing/landingpages/NotFoundPage';
-import ReportPage from '../pages/apps/report/Report';
+import ScannerPage from '../pages/apps/scan/ScannerPage';
+import SubmitReportPage from '../pages/apps/report/SubmitReportPage';
 
 const AppProtectedRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<DashboardPage />} />
-      <Route path="report" element={<ReportPage />} />
       
+      {/* New Reporting Flow Routes */}
+      <Route path="scan" element={<ScannerPage />} />
+      <Route path="report/new/:locationId" element={<SubmitReportPage />} />
+
+      {/* Default route within the protected app */}
       <Route index element={<Navigate to="dashboard" replace />} />
-      <Route path="*" element={<NotFoundPage />} />  
+      
+      {/* Fallback for any other /app/* route */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };
