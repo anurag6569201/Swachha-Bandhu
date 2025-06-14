@@ -1,18 +1,23 @@
-// src/contexts/AuthContext.tsx
+// AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import apiClient from '../Api';
 
 interface User {
-  id: number;
+  id: string;
   email: string;
   full_name: string;
-  // Add other user properties from your backend UserSerializer
+  phone_number: string | null;
+  role: string;
+  total_points: number;
+  municipality: string | null;
+  municipality_name: string | null;
+  date_joined: string;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  login: (accessToken: string, refreshToken: string, userDataFromToken?: Partial<User>) => Promise<void>;
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -24,7 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const clearAuthData = async () => {
+  const clearAuthData = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('userData');
@@ -41,22 +46,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (accessToken) {
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         try {
-          // Attempt to fetch user profile to verify token and get fresh user data
-          const response = await apiClient.get<User>('/profile/'); // Backend UserProfileView
+          const response = await apiClient.get<User>('/auth/profile/');
           setUser(response.data);
           localStorage.setItem('userData', JSON.stringify(response.data));
           setIsAuthenticated(true);
         } catch (error: any) {
-          console.warn("Auth check failed (token might be expired/invalid):", error.response?.data || error.message);
-          if (error.response?.status === 401) { // Specifically handle 401
-            await clearAuthData(); // Clear if token is invalid
+          console.warn("Auth check failed:", error.response?.data || error.message);
+          if (error.response?.status === 401) {
+            clearAuthData();
           }
-          // For other errors, you might decide to keep the user authenticated optimistically
-          // or also clear. For now, only 401 clears.
         }
       } else {
-        // No token, ensure auth state is cleared (though it should be by default)
-        await clearAuthData();
+        clearAuthData();
       }
       setIsLoading(false);
     };
@@ -64,21 +65,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
 
-  const login = async (accessToken: string, refreshToken: string, userDataFromToken?: Partial<User>) => {
+  const login = async (accessToken: string, refreshToken: string) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
     try {
-        // Fetch fresh user profile data after login
-        const response = await apiClient.get<User>('/profile/');
+        const response = await apiClient.get<User>('/auth/profile/');
         localStorage.setItem('userData', JSON.stringify(response.data));
         setUser(response.data);
         setIsAuthenticated(true);
     } catch (error) {
         console.error("Failed to fetch user profile after login:", error);
-        // If profile fetch fails, it's a critical issue, so clear tokens and logout
-        await clearAuthData();
+        clearAuthData();
         throw new Error("Login succeeded but failed to fetch user profile.");
     }
   };
@@ -88,12 +87,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const refreshToken = localStorage.getItem('refreshToken');
     try {
       if (refreshToken) {
-        await apiClient.post('/logout/', { refresh: refreshToken });
+        await apiClient.post('/auth/logout/', { refresh_token: refreshToken });
       }
     } catch (error) {
       console.error('Logout API call failed:', error);
     } finally {
-      await clearAuthData();
+      clearAuthData();
       setIsLoading(false);
       window.location.href = '/auth/login'; 
     }
@@ -101,7 +100,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, logout, isLoading }}>
-      {!isLoading ? children : <div>Loading Authentication...</div>}
+      {!isLoading ? children : <div className="min-h-screen flex items-center justify-center">Loading Authentication...</div>}
     </AuthContext.Provider>
   );
 };

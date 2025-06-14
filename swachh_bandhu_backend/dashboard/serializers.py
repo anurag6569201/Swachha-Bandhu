@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+# --- SERIALIZERS FOR MUNICIPAL DASHBOARD (Existing) ---
+
 class DashboardStatsSerializer(serializers.Serializer):
     total_reports = serializers.IntegerField()
     pending_reports = serializers.IntegerField()
@@ -28,3 +30,22 @@ class TopContributorSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     total_points = serializers.IntegerField()
     reports_filed = serializers.IntegerField()
+
+# --- NEW SERIALIZERS FOR CITIZEN DASHBOARD ---
+
+class CitizenDashboardStatsSerializer(serializers.Serializer):
+    total_points = serializers.IntegerField()
+    rank = serializers.IntegerField(allow_null=True)
+    reports_filed = serializers.IntegerField()
+    reports_verified = serializers.IntegerField()
+    reports_actioned = serializers.IntegerField()
+    reports_pending = serializers.IntegerField()
+
+class RecentActivitySerializer(serializers.Serializer):
+    activity_type = serializers.CharField()
+    details = serializers.CharField()
+    points = serializers.IntegerField()
+    timestamp = serializers.DateTimeField()
+    report_id = serializers.IntegerField(allow_null=True)
+    badge_name = serializers.CharField(allow_null=True)
+    badge_icon_url = serializers.URLField(allow_null=True)

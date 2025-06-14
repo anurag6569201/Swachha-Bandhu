@@ -1,7 +1,8 @@
 # gamification/services.py
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from .models import PointLog, Report
+from gamification.models import PointLog
+from reports.models import Report
 from users.models import User
 
 # Define point values in settings for easy configuration

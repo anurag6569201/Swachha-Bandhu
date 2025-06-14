@@ -1,4 +1,4 @@
-// src/pages/landing/landingpages/ResetPasswordPage.tsx
+// ResetPasswordPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -23,7 +23,7 @@ const ResetPasswordPage: React.FC = () => {
   useEffect(() => {
     if (!token) {
       setError("Invalid or missing password reset token.");
-      navigate('/auth/forgot-password'); // Optional: redirect
+      navigate('/auth/forgot-password');
     }
   }, [token, navigate]);
 
@@ -46,7 +46,7 @@ const ResetPasswordPage: React.FC = () => {
       const response = await apiClient.post('/password-reset/confirm/', {
         token,
         new_password: newPassword,
-        confirm_new_password: confirmNewPassword, // Serializer expects 'confirm_new_password'
+        confirm_new_password: confirmNewPassword,
       });
       setMessage(response.data.message || "Your password has been reset successfully. You can now log in.");
       setTimeout(() => navigate('/auth/login'), 3000);
@@ -56,9 +56,9 @@ const ResetPasswordPage: React.FC = () => {
         const errorData = err.response.data;
         let errorMessages = [];
         if (errorData.token) errorMessages.push(...errorData.token);
-        if (errorData.new_password) errorMessages.push(...errorData.new_password); // check for new_password
+        if (errorData.new_password) errorMessages.push(...errorData.new_password);
         if (errorData.detail) errorMessages.push(errorData.detail);
-        if (errorData.error) errorMessages.push(errorData.error); // general error
+        if (errorData.error) errorMessages.push(errorData.error);
         setError(errorMessages.length > 0 ? errorMessages.join(' ') : 'Failed to reset password. The link may be invalid or expired.');
       } else {
         setError('An unexpected error occurred. Please try again.');
@@ -69,7 +69,7 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="mt-20 min-h-screen flex flex-col"> {/* Ensure mt-20 for header offset */}
+    <div className="mt-20 min-h-screen flex flex-col">
       <Section bgColor="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-800" className="flex-grow flex items-center justify-center py-12">
         <div className="container mx-auto px-4">
           <motion.div
