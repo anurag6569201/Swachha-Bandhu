@@ -1,21 +1,34 @@
-# locations/views.py
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Location
-from .serializers import LocationSerializer
+from .serializers import LocationReadSerializer, LocationCreateUpdateSerializer
+from core.permissions import IsMunicipalAdmin
 
-class LocationViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    A read-only API endpoint for listing and retrieving locations.
-    
-    The frontend will use this to:
-    1. Fetch details of a location after a QR code scan.
-    2. (Optional) Display all available locations on a map.
-    """
-    queryset = Location.objects.all().order_by('name')
-    serializer_class = LocationSerializer
-    # We allow any user (even unauthenticated) to view location data.
-    # This is necessary for the initial QR scan before a user might log in.
-    permission_classes = [permissions.AllowAny]
-    
-    # Use the UUID 'id' field for lookup instead of the default 'pk'.
+class LocationViewSet(viewsets.ModelViewSet):
+    queryset = Location.objects.filter(is_active=True).select_related('municipality')
     lookup_field = 'id'
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['municipality', 'location_type']
+    search_fields = ['name', 'description']
+    ordering_fields = ['name', 'created_at']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return LocationCreateUpdateSerializer
+        return LocationReadSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsMunicipalAdmin]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+
+        if user.is_authenticated and user.role in ['MUNICIPAL_ADMIN', 'MODERATOR'] and user.municipality:
+            return qs.filter(municipality=user.municipality)
+        
+        return qs

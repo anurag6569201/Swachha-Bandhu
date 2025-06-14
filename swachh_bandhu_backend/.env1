@@ -1,0 +1,28 @@
+SECRET_KEY='django-insecure-87v9x77w9&0e7lgrnc1^2t(bk1)72rv)vgeh*xjhb7iicpi2h9'
+DEBUG=True
+DATABASE_URL='postgres://postgre6569201:1234as@AS@postgre6569201.postgres.database.azure.com:5432/development-bandhu?sslmode=require'
+ALLOWED_HOSTS='127.0.0.1,localhost'
+
+CORS_ALLOWED_ORIGINS='http://localhost:5173,http://127.0.0.1:5173'
+
+ACCESS_TOKEN_LIFETIME=15
+REFRESH_TOKEN_LIFETIME=7
+
+FRONTEND_URL='http://localhost:5173'
+PASSWORD_RESET_TIMEOUT_HOURS=1
+EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL='anurag6569201@gmail.com'
+
+MAX_VERIFICATION_DISTANCE_METERS=50
+MIN_DISTANCE_BETWEEN_REPORTS_METERS=10
+GOOGLE_MAPS_API_KEY="AIzaSyB2SdwkAYiWdd6txrm7DxoEY3Cu718AehY"
+
+POINTS_FOR_INITIAL_REPORT=10
+POINTS_FOR_PEER_VERIFICATION=5
+PENALTY_FOR_FAKE_REPORT=-50
+
+CELERY_BROKER_URL='redis://localhost:6379/0'
+CELERY_RESULT_BACKEND='redis://localhost:6379/0'
+
+GDAL_LIBRARY_PATH = '/opt/homebrew/Cellar/gdal/3.11.0_2/lib/libgdal.dylib'
+GEOS_LIBRARY_PATH = '/opt/homebrew/Cellar/geos/3.13.1/lib/libgeos_c.dylib'

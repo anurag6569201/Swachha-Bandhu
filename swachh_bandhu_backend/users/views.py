@@ -1,19 +1,19 @@
-# users/views.py
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status, permissions, views
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from .serializers import (
-    RegisterSerializer, UserSerializer, MyTokenObtainPairSerializer,
-    PasswordResetRequestSerializer, PasswordResetConfirmSerializer
-)
 from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import (
+    RegisterSerializer, UserSerializer, TokenObtainPairSerializer,
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
+    UserProfileUpdateSerializer
+)
 
 User = get_user_model()
 
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = TokenObtainPairSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -24,7 +24,6 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        
         return Response({
             "user": UserSerializer(user, context=self.get_serializer_context()).data,
             "message": "User registered successfully. Please log in."
@@ -35,7 +34,7 @@ class LogoutView(views.APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data.get("refresh")
+            refresh_token = request.data.get("refresh_token")
             if not refresh_token:
                 return Response({"error": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -44,7 +43,7 @@ class LogoutView(views.APIView):
             return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
         except TokenError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+        except Exception:
             return Response({"error": "An error occurred during logout."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class PasswordResetRequestView(generics.GenericAPIView):
@@ -67,9 +66,13 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         result = serializer.save()
         return Response(result, status=status.HTTP_200_OK)
 
-class UserProfileView(generics.RetrieveAPIView):
+class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = UserSerializer
-
+    
     def get_object(self):
         return self.request.user
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return UserProfileUpdateSerializer
+        return UserSerializer

@@ -1,55 +1,61 @@
-# locations/models.py
 import uuid
 from django.db import models
-from django.conf import settings
+from django.contrib.gis.db import models as gis_models
+from django.utils.translation import gettext_lazy as _
+from subscriptions.models import Municipality
+
+def qr_code_upload_path(instance, filename):
+    return f'locations/{instance.municipality.id}/{instance.id}/{filename}'
 
 class Location(models.Model):
-    # Using UUID for the primary key is great for public-facing IDs.
-    # It prevents enumeration attacks and is not sequential.
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    name = models.CharField(max_length=255, help_text="The common name of the location (e.g., 'City Park Main Entrance').")
-    description = models.TextField(blank=True, help_text="A brief description of the location.")
-
-    # Using DecimalField for lat/lng is the standard for precision.
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=10, decimal_places=6) # Longitude needs 10 digits for values like -122.419416
-
-    # Location Type can be used by the frontend to render different icons or forms.
     class LocationType(models.TextChoices):
-        PUBLIC_TOILET = 'TOILET', 'Public Toilet'
-        BUS_STAND = 'BUS_STAND', 'Bus Stand'
-        PARK = 'PARK', 'Park'
-        STREET = 'STREET', 'Street'
-        OTHER = 'OTHER', 'Other'
+        PUBLIC_TOILET = 'PUBLIC_TOILET', _('Public Toilet')
+        BUS_STAND = 'BUS_STAND', _('Bus Stand')
+        PARK = 'PARK', _('Park')
+        STREET_SEGMENT = 'STREET_SEGMENT', _('Street Segment')
+        PUBLIC_BIN = 'PUBLIC_BIN', _('Public Bin')
+        GOVERNMENT_OFFICE = 'GOVERNMENT_OFFICE', _('Government Office')
+        OTHER = 'OTHER', _('Other')
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, help_text=_("Common name of the location, e.g., 'Main Street Park - Gate A'."))
+    description = models.TextField(blank=True, help_text=_("A brief description or additional details about the location."))
+    
+    point = gis_models.PointField(srid=4326, help_text=_("The precise geographic coordinate of the location."))
+    
+    municipality = models.ForeignKey(
+        Municipality, 
+        on_delete=models.CASCADE, 
+        related_name='locations',
+        help_text=_("The governing municipality for this location.")
+    )
+    
     location_type = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=LocationType.choices,
         default=LocationType.OTHER,
         db_index=True
     )
 
+    qr_code_image = models.ImageField(upload_to=qr_code_upload_path, blank=True, null=True, editable=False)
+    
+    is_active = models.BooleanField(default=True, help_text=_("Inactive locations cannot have new reports filed against them."))
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['name']
-        verbose_name = "Location"
-        verbose_name_plural = "Locations"
+        ordering = ['municipality', 'name']
+        verbose_name = _("Location")
+        verbose_name_plural = _("Locations")
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.municipality.name})"
 
     @property
-    def qr_code_url(self):
-        """
-        Generates the full URL to be embedded in the QR code.
-        This is a read-only property for convenience.
-        """
-        # Note: This requires FRONTEND_URL to be set in your .env
-        frontend_url = getattr(settings, 'FRONTEND_URL', '')
-        if not frontend_url:
-            return f"FRONTEND_URL not configured. Location ID: {self.id}"
-        # The React app will have a route like /scan/:locationId
-        return f"{frontend_url}/scan/{self.id}"
+    def latitude(self):
+        return self.point.y
+
+    @property
+    def longitude(self):
+        return self.point.x
