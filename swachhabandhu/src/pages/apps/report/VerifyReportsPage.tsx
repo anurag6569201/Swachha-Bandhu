@@ -8,9 +8,18 @@ import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { MapPin, Tag, CheckSquare, ListChecks, HelpCircle } from 'lucide-react';
 
+// --- Paginated Response Type ---
+interface PaginatedReportsResponse {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Report[];
+}
+
+
 const fetchPendingReports = async (): Promise<Report[]> => {
     // Fetch reports that are specifically in PENDING status for verification
-    const response = await apiClient.get<{ results: Report[] }>('/reports/?status=PENDING');
+    const response = await apiClient.get<PaginatedReportsResponse>('/reports/?status=PENDING&exclude_user=true');
     return response.data.results;
 };
 

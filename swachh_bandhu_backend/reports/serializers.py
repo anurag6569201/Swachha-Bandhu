@@ -26,6 +26,9 @@ class ReportReadSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     media = ReportMediaSerializer(many=True, read_only=True)
     location_name = serializers.CharField(source='location.name', read_only=True)
+    location_latitude = serializers.CharField(source='location.latitude', read_only=True)
+    location_longitude = serializers.CharField(source='location.longitude', read_only=True)
+    geofence_radius = serializers.CharField(source='location.geofence_radius', read_only=True)
     issue_category = IssueCategorySerializer(read_only=True)
     verification_count = serializers.IntegerField(source='verifications.count', read_only=True)
     
@@ -34,7 +37,7 @@ class ReportReadSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'location', 'location_name', 'issue_category',
             'description', 'status', 'severity', 'media', 'created_at', 'updated_at', 'verification_count',
-            'verifies_report'
+            'verifies_report','location_latitude', 'location_longitude','geofence_radius'
         ]
 
 class ReportDetailSerializer(ReportReadSerializer):
@@ -97,9 +100,9 @@ class ReportCreateSerializer(serializers.ModelSerializer):
                 {"geolocation": f"Geo-fence check failed. You must be within {radius} meters of the location to file a report."}
             )
 
-        nearby_report = find_nearby_duplicate_report(location_obj, data['issue_category'])
-        if nearby_report:
-            raise serializers.ValidationError({"duplicate_report": f"A similar report (ID: {nearby_report.id}) was recently filed for this location and issue. Please check if it's the same problem."})
+        # nearby_report = find_nearby_duplicate_report(location_obj, data['issue_category'])
+        # if nearby_report:
+        #     raise serializers.ValidationError({"duplicate_report": f"A similar report (ID: {nearby_report.id}) was recently filed for this location and issue. Please check if it's the same problem."})
 
         data['location'] = location_obj
         return data

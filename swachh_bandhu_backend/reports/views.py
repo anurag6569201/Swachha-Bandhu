@@ -46,14 +46,26 @@ class ReportViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Report.objects.none()
 
-        # Admins and moderators see reports for their municipality
+        # Admins and moderators see reports based on their municipality
         if user.role in ['SUPER_ADMIN', 'MUNICIPAL_ADMIN', 'MODERATOR']:
             if user.municipality:
                 return qs.filter(location__municipality=user.municipality)
-            return qs # Super admin sees all
-        
-        # Citizens see their own reports
-        return qs.filter(user=user)
+            return qs  # Super admin sees all
+
+        # This uses the `?exclude_user=true` query parameter.
+        exclude_current_user = self.request.query_params.get('exclude_user', 'false').lower() == 'true'
+        if self.action == 'list' and exclude_current_user:
+            return qs.exclude(user=user)
+
+        # For the "My Reports" page (a standard list view), filter to ONLY the user's reports.
+        if self.action == 'list':
+            return qs.filter(user=user)
+            
+        # For all other actions (retrieve, verify, moderate, etc.), we DO NOT filter by user.
+        # This is CRUCIAL. It allows a user to retrieve another user's report detail
+        # to view it before verifying. The permission classes on the actions themselves
+        # will handle security (e.g., a citizen can't moderate).
+        return qs
 
     # CRITICAL FIX: Trigger gamification tasks after report creation
     def perform_create(self, serializer):

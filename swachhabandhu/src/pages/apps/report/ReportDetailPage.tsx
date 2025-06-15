@@ -2,14 +2,14 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient from '../../../Api';
-import { useApi } from './hooks/useApi';
+import { useApi } from './hooks/useApi'; // Make sure this path is correct
 import type { ReportDetail } from '../../../types';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Calendar, User, Hash, MapPin, Tag, Shield, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Calendar, User, Hash, MapPin, Tag, Shield, FileText, CheckCircle, Clock } from 'lucide-react';
 
 const fetchReportDetail = async (reportId: string): Promise<ReportDetail> => {
     const response = await apiClient.get<ReportDetail>(`/reports/${reportId}/`);
@@ -22,6 +22,7 @@ import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 let DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, iconAnchor: [12, 41] });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// --- StatusTimeline Component (No Change) ---
 const StatusTimeline: React.FC<{ history: ReportDetail['status_history'] }> = ({ history }) => (
     <div className="mt-6">
         <h3 className="text-lg font-semibold text-gray-700 mb-4">Status History</h3>
@@ -47,27 +48,46 @@ const StatusTimeline: React.FC<{ history: ReportDetail['status_history'] }> = ({
     </div>
 );
 
-const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | React.ReactNode; }> = ({ icon, label, value }) => (
-    <div className="flex items-start">
+// --- DetailItem Component ---
+// FIX #1: The element that wraps the `value` prop is now a <div> instead of a <p>.
+// This allows it to safely contain any type of content, including other paragraphs or complex elements.
+const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | React.ReactNode; className?: string }> = ({ icon, label, value, className = '' }) => (
+    <div className={`flex items-start ${className}`}>
         <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-500">{icon}</div>
         <div className="ml-3">
             <p className="text-sm text-gray-500">{label}</p>
-            <p className="text-base font-medium text-gray-800">{value}</p>
+            <div className="text-base font-medium text-gray-800">{value}</div>
         </div>
     </div>
 );
 
+
+// --- ReportDetailPage Main Component ---
 const ReportDetailPage: React.FC = () => {
     const { reportId } = useParams<{ reportId: string }>();
     if (!reportId) return <div>Invalid Report ID</div>;
 
     const { data: report, isLoading, error } = useApi(() => fetchReportDetail(reportId), [reportId]);
 
-    if (isLoading) return <div className="text-center p-10">Loading report details...</div>;
-    if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
-    if (!report) return <div className="text-center p-10">Report not found.</div>;
+    // --- FIX #2: Handle loading and error states before trying to render the component body ---
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+        </div>
+      );
+    }
+    
+    if (error) {
+        return <div className="text-center p-10 text-red-500 bg-red-50 rounded-lg max-w-2xl mx-auto mt-10">Error loading report: {error}</div>;
+    }
+        
+    if (!report) {
+        return <div className="text-center p-10">Report not found.</div>;
+    }
 
-    const locationPosition: [number, number] = [report.location.latitude, report.location.longitude];
+    // This code now only runs when `report` is guaranteed to have data.
+    const locationPosition: [number, number] = [report.location_latitude, report.location_longitude];
 
     return (
         <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -89,7 +109,14 @@ const ReportDetailPage: React.FC = () => {
                         <DetailItem icon={<MapPin size={20}/>} label="Location" value={report.location_name} />
                         <DetailItem icon={<Tag size={20}/>} label="Category" value={report.issue_category.name} />
                         <DetailItem icon={<Shield size={20}/>} label="Severity" value={report.severity} />
-                        <DetailItem icon={<FileText size={20}/>} label="Description" value={<p className="italic">"{report.description}"</p>} />
+                        
+                        {/* The fix in DetailItem allows this to work without nesting errors */}
+                        <DetailItem 
+                            icon={<FileText size={20}/>} 
+                            label="Description" 
+                            value={<p className="italic">"{report.description}"</p>}
+                            className="md:col-span-2"
+                        />
                     </div>
 
                     {report.media.length > 0 && (
@@ -97,8 +124,8 @@ const ReportDetailPage: React.FC = () => {
                             <h3 className="text-lg font-semibold text-gray-700 mb-2">Attached Media</h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {report.media.map(m => (
-                                    <a key={m.id} href={m.file} target="_blank" rel="noopener noreferrer">
-                                        <img src={m.file} alt="Report media" className="rounded-lg object-cover h-32 w-full transition-transform hover:scale-105" />
+                                    <a key={m.id} href={m.file} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden shadow-md">
+                                        <img src={m.file} alt="Report media" className="h-32 w-full object-cover transition-transform hover:scale-105" />
                                     </a>
                                 ))}
                             </div>
@@ -106,10 +133,10 @@ const ReportDetailPage: React.FC = () => {
                     )}
 
                     <div className="mt-6 h-64 w-full rounded-lg overflow-hidden border">
-                         <MapContainer center={locationPosition} zoom={16} style={{ height: '100%', width: '100%' }}>
+                        <MapContainer center={locationPosition} zoom={16} style={{ height: '100%', width: '100%' }}>
                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                             <Marker position={locationPosition}><Popup>{report.location_name}</Popup></Marker>
-                            <Circle center={locationPosition} radius={report.location.geofence_radius} pathOptions={{ color: 'blue', fillOpacity: 0.1 }} />
+                            <Circle center={locationPosition} radius={report.geofence_radius} pathOptions={{ color: 'blue', fillOpacity: 0.1 }} />
                         </MapContainer>
                     </div>
 
