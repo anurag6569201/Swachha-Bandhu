@@ -36,22 +36,10 @@ class LotterySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'sponsor', 'municipality_name', 'end_date', 'winner_name', 'drawn_at']
 
 class UserProfileStatsSerializer(serializers.ModelSerializer):
-    rank = serializers.SerializerMethodField()
-    earned_badges = UserBadgeSerializer(many=True, read_only=True, source='userbadge_set')
+    # The rank is now calculated in the view and passed in
+    rank = serializers.IntegerField(read_only=True, allow_null=True)
+    earned_badges = UserBadgeSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
         fields = ['id', 'full_name', 'total_points', 'rank', 'earned_badges']
-
-    def get_rank(self, obj):
-        all_users = User.objects.filter(
-            is_active=True, role='CITIZEN'
-        ).order_by('-total_points')
-        
-        user_ids = list(all_users.values_list('id', flat=True))
-        
-        try:
-            rank = user_ids.index(obj.id) + 1
-            return rank
-        except ValueError:
-            return None

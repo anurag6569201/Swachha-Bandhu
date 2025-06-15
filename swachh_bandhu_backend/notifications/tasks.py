@@ -3,7 +3,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from users.models import User
 from reports.models import Report
-from gamification.models import Badge, Lottery
+from gamification.models import UserBadge, Lottery
 
 @shared_task(rate_limit='10/m')
 def send_email_task(subject, message, recipient_list):
@@ -17,6 +17,8 @@ def send_email_task(subject, message, recipient_list):
         )
         return f"Email sent successfully to {recipient_list}"
     except Exception as e:
+        # It's good practice to log the exception here
+        # logger.error(f"Failed to send email to {recipient_list}: {str(e)}")
         return f"Failed to send email to {recipient_list}: {str(e)}"
 
 @shared_task
@@ -28,7 +30,7 @@ def notify_user_of_status_change(report_id):
             subject = f"Update on your Swachh Bandhu Report #{report.id}"
             message = (
                 f"Hello {user.full_name},\n\n"
-                f"Your report regarding '{report.issue_type}' at '{report.location.name}' has been updated.\n"
+                f"Your report regarding '{report.issue_category.name}' at '{report.location.name}' has been updated.\n"
                 f"The new status is: {report.get_status_display()}.\n\n"
                 f"Thank you for your contribution to a cleaner community!\n\n"
                 "The Swachh Bandhu Team"
@@ -39,7 +41,6 @@ def notify_user_of_status_change(report_id):
 
 @shared_task
 def notify_user_of_new_badge(user_badge_id):
-    from gamification.models import UserBadge
     try:
         user_badge = UserBadge.objects.select_related('user', 'badge').get(pk=user_badge_id)
         user = user_badge.user

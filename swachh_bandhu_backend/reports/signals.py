@@ -12,22 +12,9 @@ def create_report_status_history_and_update_location(sender, instance, created, 
             changed_by=instance.user,
             notes="Report created."
         )
+        # Update the location's last reported time
         instance.location.last_reported_at = timezone.now()
         instance.location.save(update_fields=['last_reported_at'])
     
-    else:
-        # Avoid creating history on every save, only on status change.
-        try:
-            latest_history = instance.status_history.latest('timestamp')
-            if latest_history.status != instance.status:
-                ReportStatusHistory.objects.create(
-                    report=instance,
-                    status=instance.status,
-                    # This assumes a 'request' object is somehow passed to the model, which is hard.
-                    # A better approach is to handle history creation in the view/serializer where the user is known.
-                    # For simplicity of this implementation, we leave changed_by as null on updates here.
-                    changed_by=None, 
-                    notes=instance.moderator_notes or ""
-                )
-        except ReportStatusHistory.DoesNotExist:
-             ReportStatusHistory.objects.create(report=instance, status=instance.status)
+    # History for status changes is now handled in the ReportModerateSerializer
+    # to ensure the user who made the change is correctly attributed.

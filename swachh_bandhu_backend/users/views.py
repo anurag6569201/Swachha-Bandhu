@@ -53,8 +53,8 @@ class PasswordResetRequestView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        result = serializer.save()
-        return Response(result, status=status.HTTP_200_OK)
+        serializer.save()
+        return Response({"message": "If an account with that email exists, a password reset link has been sent."}, status=status.HTTP_200_OK)
 
 class PasswordResetConfirmView(generics.GenericAPIView):
     permission_classes = (permissions.AllowAny,)
@@ -63,8 +63,8 @@ class PasswordResetConfirmView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        result = serializer.save()
-        return Response(result, status=status.HTTP_200_OK)
+        serializer.save()
+        return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = (permissions.IsAuthenticated,)

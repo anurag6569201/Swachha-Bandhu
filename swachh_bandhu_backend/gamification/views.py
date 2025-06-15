@@ -3,7 +3,7 @@ from django.db.models.functions import Rank
 from django.utils import timezone
 from rest_framework import generics, viewsets, permissions
 from rest_framework.response import Response
-from users.models import User
+from users.models import User, UserRole
 from .models import Lottery
 from .serializers import LeaderboardUserSerializer, LotterySerializer, UserProfileStatsSerializer
 
@@ -14,18 +14,14 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         period = self.request.query_params.get('period', 'all_time')
         
-        if period == 'monthly':
-            # This requires a UserActivity model to track points earned in a specific month.
-            # Assuming such a model exists for demonstration.
-            # For simplicity in this example, we will still use total_points.
-            # In a real-world scenario, you would aggregate points from the current month.
-            queryset = User.objects.filter(is_active=True, role='CITIZEN')
-        else: # all_time
-            queryset = User.objects.filter(is_active=True, role='CITIZEN')
+        # Currently only supports 'all_time'.
+        # A more complex implementation would be needed for monthly leaderboards.
+        queryset = User.objects.filter(is_active=True, role=UserRole.CITIZEN)
 
+        # Annotate rank using a window function for efficiency
         return queryset.annotate(
             rank=Window(expression=Rank(), order_by=F('total_points').desc())
-        ).order_by('rank', 'date_joined')[:10]
+        ).order_by('rank', 'date_joined')[:100] # Increased leaderboard size
 
 
 class UserProfileStatsView(generics.RetrieveAPIView):
@@ -33,7 +29,20 @@ class UserProfileStatsView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        user = self.request.user
+        try:
+            # Annotate the user object with its rank efficiently
+            user_with_rank = User.objects.filter(
+                is_active=True, role=UserRole.CITIZEN
+            ).annotate(
+                rank=Window(expression=Rank(), order_by=F('total_points').desc())
+            ).get(pk=user.pk)
+            return user_with_rank
+        except User.DoesNotExist:
+            # This can happen if the user is not a CITIZEN or if there's an issue.
+            # Fallback to the original user object and set rank to None.
+            user.rank = None 
+            return user
 
 
 class LotteryViewSet(viewsets.ReadOnlyModelViewSet):

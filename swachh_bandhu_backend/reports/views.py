@@ -46,17 +46,18 @@ class ReportViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Report.objects.none()
 
+        # Admins and moderators see reports for their municipality
         if user.role in ['SUPER_ADMIN', 'MUNICIPAL_ADMIN', 'MODERATOR']:
             if user.municipality:
                 return qs.filter(location__municipality=user.municipality)
             return qs # Super admin sees all
         
+        # Citizens see their own reports
         return qs.filter(user=user)
 
-    # ADD THIS METHOD
+    # CRITICAL FIX: Trigger gamification tasks after report creation
     def perform_create(self, serializer):
         report = serializer.save(user=self.request.user)
-        # Trigger the gamification task asynchronously
         process_report_points.delay(report.id)
 
     @action(detail=True, methods=['post'], url_path='verify', permission_classes=[IsCitizen])
@@ -67,12 +68,12 @@ class ReportViewSet(viewsets.ModelViewSet):
             context={'request': request, 'original_report': original_report}
         )
         serializer.is_valid(raise_exception=True)
-        verification_report = serializer.save()
-        # ALSO TRIGGER POINTS FOR VERIFICATION HERE
+        # Manually save and trigger points, since perform_create is not called for actions
+        verification_report = serializer.save(user=request.user)
         process_report_points.delay(verification_report.id)
+
         read_serializer = ReportReadSerializer(verification_report, context={'request': request})
         return Response(read_serializer.data, status=status.HTTP_201_CREATED)
-
 
     @action(detail=True, methods=['patch'], url_path='moderate', permission_classes=[IsModerator])
     def moderate(self, request, pk=None):

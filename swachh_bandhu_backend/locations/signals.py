@@ -8,8 +8,10 @@ from .models import Location
 
 @receiver(post_save, sender=Location)
 def generate_qr_code_on_save(sender, instance, created, **kwargs):
+    # Only generate QR code if it doesn't exist yet, to avoid regeneration on every save
     if not instance.qr_code_image:
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        # A more robust URL might point to a specific page for reporting via QR
         qr_data = f"{frontend_url}/report/new/{instance.id}"
         
         qr = qrcode.QRCode(
@@ -27,8 +29,8 @@ def generate_qr_code_on_save(sender, instance, created, **kwargs):
         img.save(buffer, format='PNG')
         filename = f'location_{instance.id}_qr.png'
         
-        instance.qr_code_image.save(filename, File(buffer), save=False)
-        
+        # Use a transaction-safe way to save the file without triggering the signal again
+        # Disconnecting and reconnecting the signal ensures we don't enter an infinite loop.
         post_save.disconnect(generate_qr_code_on_save, sender=Location)
-        instance.save(update_fields=['qr_code_image'])
+        instance.qr_code_image.save(filename, File(buffer), save=True)
         post_save.connect(generate_qr_code_on_save, sender=Location)

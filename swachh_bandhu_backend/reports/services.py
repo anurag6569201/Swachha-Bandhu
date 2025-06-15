@@ -17,7 +17,7 @@ def find_nearby_duplicate_report(location, issue_category):
     time_threshold = timezone.now() - timedelta(days=7)
     
     nearby_reports = Report.objects.filter(
-        location__point__dwithin=(location.point, 0.0001), # Approx 11 meters
+        location=location,
         issue_category=issue_category,
         created_at__gte=time_threshold,
         status__in=[Report.ReportStatus.PENDING, Report.ReportStatus.VERIFIED, Report.ReportStatus.IN_PROGRESS]

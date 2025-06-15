@@ -42,16 +42,7 @@ class Location(models.Model):
     def __str__(self):
         return f"{self.name} ({self.municipality.name})"
 
-    def save(self, *args, **kwargs):
-        if not self.qr_code_image:
-            frontend_url = getattr(settings, 'FRONTEND_REPORT_URL', 'https://example.com/report/new/')
-            qr_data = f"{frontend_url}{self.id}"
-            qr_img = qrcode.make(qr_data, box_size=10, border=4)
-            buffer = BytesIO()
-            qr_img.save(buffer, format='PNG')
-            file_name = f'qr_code_{self.id}.png'
-            self.qr_code_image.save(file_name, ContentFile(buffer.getvalue()), save=False)
-        super().save(*args, **kwargs)
+    # QR code generation is now handled by a post_save signal in locations/signals.py
 
     @property
     def latitude(self):

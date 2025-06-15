@@ -36,13 +36,23 @@ def process_report_points(report_id):
         
         if points != 0:
             with transaction.atomic():
-                user = User.objects.select_for_update().get(pk=user.pk)
-                PointLog.objects.create(
-                    user=user, points=points, reason=reason, source_object=report
+                # Lock the user row to prevent race conditions when updating points
+                user_locked = User.objects.select_for_update().get(pk=user.pk)
+                
+                point_log = PointLog.objects.create(
+                    user=user_locked, points=points, reason=reason, source_object=report
                 )
-                user.total_points = F('total_points') + points
-                user.save(update_fields=['total_points'])
+                
+                # Update the report with the points awarded
+                report.points_awarded = points
+                report.save(update_fields=['points_awarded'])
+
+                # Update user's total points
+                user_locked.total_points = F('total_points') + points
+                user_locked.save(update_fields=['total_points'])
             
+            # Refresh the user object to get the latest point total for badge checks
+            user.refresh_from_db()
             check_and_award_badges.delay(user.id)
             assign_lottery_ticket.delay(user.id, report.id)
 

@@ -27,9 +27,9 @@ class Report(models.Model):
         VERIFIED = 'VERIFIED', _('Verified & Awaiting Action')
         REJECTED = 'REJECTED', _('Rejected')
         IN_PROGRESS = 'IN_PROGRESS', _('Action In Progress')
-        RESOLVED = 'RESOLVED', _('Resolved')
-        DUPLICATE = 'DUPLICATE', _('Duplicate')
         ACTIONED = 'ACTIONED', _('Action Taken')
+        # Removed RESOLVED and DUPLICATE for simplicity; ACTIONED and REJECTED cover most cases.
+        # Consider adding them back if finer-grained status is needed.
     
     class SeverityLevel(models.TextChoices):
         LOW = 'LOW', _('Low')
@@ -46,7 +46,7 @@ class Report(models.Model):
     moderator_notes = models.TextField(blank=True, null=True)
     action_taken_notes = models.TextField(blank=True, null=True)
     verifies_report = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='verifications')
-    points_awarded = models.PositiveIntegerField(default=0, help_text=_("Points awarded for this report submission."))
+    points_awarded = models.IntegerField(default=0, help_text=_("Points awarded or deducted for this report submission."))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

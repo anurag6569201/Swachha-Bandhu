@@ -15,6 +15,8 @@ class TokenObtainPairSerializer(BaseTokenObtainPairSerializer):
         token['email'] = user.email
         token['full_name'] = user.full_name
         token['role'] = user.role
+        if user.municipality:
+            token['municipality_id'] = str(user.municipality.id)
         return token
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -74,7 +76,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             "Thanks,\nThe Swachh Bandhu Team"
         )
         
-        send_email_task.delay(email_subject, email_body, settings.DEFAULT_FROM_EMAIL, [user.email])
+        send_email_task.delay(email_subject, email_body, [user.email])
         return {"message": _("Password reset link has been sent to your email.")}
 
 class PasswordResetConfirmSerializer(serializers.Serializer):

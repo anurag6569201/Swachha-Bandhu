@@ -41,12 +41,12 @@ class ReportDetailSerializer(ReportReadSerializer):
     status_history = ReportStatusHistorySerializer(many=True, read_only=True)
     
     class Meta(ReportReadSerializer.Meta):
-        fields = ReportReadSerializer.Meta.fields + ['moderator_notes', 'action_taken_notes', 'status_history']
+        fields = ReportReadSerializer.Meta.fields + ['moderator_notes', 'action_taken_notes', 'status_history', 'points_awarded']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         user = self.context['request'].user
-        if not (user.is_staff or (user.municipality and user.municipality == instance.location.municipality)):
+        if not (user.is_staff or user.is_superuser or (user.municipality and user.municipality == instance.location.municipality)):
             representation.pop('moderator_notes', None)
             representation.pop('action_taken_notes', None)
         return representation
@@ -56,7 +56,7 @@ class ReportCreateSerializer(serializers.ModelSerializer):
     user_latitude = serializers.DecimalField(max_digits=9, decimal_places=6, write_only=True)
     user_longitude = serializers.DecimalField(max_digits=10, decimal_places=6, write_only=True)
     issue_category = serializers.PrimaryKeyRelatedField(
-        queryset=IssueCategory.objects.filter(is_active=True),
+        queryset=IssueCategory.objects.all(), # Queryset is filtered dynamically in __init__
         pk_field=serializers.UUIDField()
     )
 
@@ -69,17 +69,17 @@ class ReportCreateSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        request = self.context.get('request')
-        if request and hasattr(request.user, 'municipality'):
-            location_id = self.initial_data.get('location')
-            if location_id:
-                try:
-                    location_obj = Location.objects.get(id=location_id)
-                    self.fields['issue_category'].queryset = IssueCategory.objects.filter(
-                        municipality=location_obj.municipality, is_active=True
-                    )
-                except Location.DoesNotExist:
-                    pass
+        # Dynamically filter issue_category based on the location's municipality
+        location_id = self.initial_data.get('location')
+        if location_id:
+            try:
+                location_obj = Location.objects.select_related('municipality').get(id=location_id)
+                self.fields['issue_category'].queryset = IssueCategory.objects.filter(
+                    municipality=location_obj.municipality, is_active=True
+                )
+            except Location.DoesNotExist:
+                # Let validation handle the error
+                pass
 
     def validate(self, data):
         location_id = data.get('location')
@@ -89,31 +89,29 @@ class ReportCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"location": "Location not found."})
         
         if not location_obj.is_active:
-            raise serializers.ValidationError({"location": "This location is inactive."})
+            raise serializers.ValidationError({"location": "This location is inactive and cannot be reported."})
         
         radius = location_obj.geofence_radius
         if not is_user_within_geofence(data['user_latitude'], data['user_longitude'], location_obj.latitude, location_obj.longitude, radius):
             raise serializers.ValidationError(
-                {"detail": f"Geo-fence check failed. You must be within {radius} meters."}
+                {"geolocation": f"Geo-fence check failed. You must be within {radius} meters of the location to file a report."}
             )
 
         nearby_report = find_nearby_duplicate_report(location_obj, data['issue_category'])
         if nearby_report:
-            raise serializers.ValidationError({"duplicate": f"A similar report (ID: {nearby_report.id}) was recently filed."})
+            raise serializers.ValidationError({"duplicate_report": f"A similar report (ID: {nearby_report.id}) was recently filed for this location and issue. Please check if it's the same problem."})
 
         data['location'] = location_obj
         return data
 
     def create(self, validated_data):
-        request = self.context.get('request')
-        media_files = request.FILES.getlist('media_files', [])
+        # The user is now passed from perform_create in the viewset
+        media_files = self.context['request'].FILES.getlist('media_files')
         
         validated_data.pop('user_latitude', None)
         validated_data.pop('user_longitude', None)
         
-        report = Report.objects.create(
-            **validated_data
-        )
+        report = Report.objects.create(**validated_data)
 
         if media_files:
             media_to_create = [ReportMedia(report=report, file=file) for file in media_files]
@@ -127,7 +125,7 @@ class ReportVerificationSerializer(ReportCreateSerializer):
         original_report = self.context.get('original_report')
         
         if not original_report:
-            raise serializers.ValidationError("Original report context missing.")
+            raise serializers.ValidationError("Original report context is missing.")
         if original_report.status != Report.ReportStatus.PENDING:
             raise serializers.ValidationError("This report is no longer pending verification.")
         if original_report.user == self.context['request'].user:
@@ -151,7 +149,6 @@ class ReportModerateSerializer(serializers.ModelSerializer):
         old_status = instance.status
         new_status = validated_data.get('status', old_status)
 
-        # The super().update() call saves the instance
         report = super().update(instance, validated_data)
 
         if old_status != new_status:
@@ -161,7 +158,7 @@ class ReportModerateSerializer(serializers.ModelSerializer):
                 changed_by=user,
                 notes=validated_data.get('moderator_notes', "Status updated by moderator.")
             )
-             # TRIGGER THE NOTIFICATION TASK
+             # CRITICAL FIX: Trigger notification task on status change
              notify_user_of_status_change.delay(instance.id)
-             
+
         return report

@@ -36,7 +36,7 @@ class LocationCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class LocationReadSerializer(serializers.ModelSerializer):
-    municipality = serializers.UUIDField(source='municipality.id', read_only=True) # Add this line
+    municipality = serializers.UUIDField(source='municipality.id', read_only=True)
     municipality_name = serializers.CharField(source='municipality.name', read_only=True)
     qr_code_url = serializers.ImageField(source='qr_code_image', read_only=True)
     latitude = serializers.FloatField(source='point.y', read_only=True)
@@ -46,7 +46,7 @@ class LocationReadSerializer(serializers.ModelSerializer):
         model = Location
         fields = [
             'id', 'name', 'description', 'location_type', 
-            'municipality', 'municipality_name', # Add 'municipality' here
+            'municipality', 'municipality_name',
             'qr_code_url', 'is_active', 'latitude', 'longitude', 'geofence_radius',
             'last_reported_at'
         ]
