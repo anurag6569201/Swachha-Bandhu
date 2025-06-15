@@ -3,6 +3,7 @@ import type { UserBadge } from '../types';
 import { motion } from 'framer-motion';
 
 const API_BASE_URL = 'http://localhost:8000';
+const FALLBACK_ICON = 'https://cdn3.emoji.gg/emojis/7130-dark-green-owner-badge.png'; // Path to your default badge image
 
 interface BadgeListProps {
   badges: UserBadge[];
@@ -12,23 +13,26 @@ interface BadgeListProps {
 export const BadgeList: React.FC<BadgeListProps> = ({ badges, isLoading }) => {
   if (isLoading) {
     return (
-        <div className="flex space-x-4">
-            {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-20 w-20 bg-slate-200 rounded-full animate-pulse"></div>
-            ))}
-        </div>
-    )
-  }
-  
-  if (badges.length === 0) {
-    return <div className="text-center py-5 px-3 bg-slate-100 rounded-lg border">
-        <p className="text-sm text-slate-500">Keep participating to earn your first badge!</p>
-    </div>;
+      <div className="flex space-x-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-20 w-20 bg-slate-200 rounded-full animate-pulse"></div>
+        ))}
+      </div>
+    );
   }
 
-  const badgeIconUrl = (iconPath: string) => {
-    return iconPath.startsWith('http') ? iconPath : `${API_BASE_URL}${iconPath}`;
+  if (badges.length === 0) {
+    return (
+      <div className="text-center py-5 px-3 bg-slate-100 rounded-lg border">
+        <p className="text-sm text-slate-500">Keep participating to earn your first badge!</p>
+      </div>
+    );
   }
+
+  const badgeIconUrl = (iconPath?: string | null): string => {
+    if (!iconPath) return FALLBACK_ICON;
+    return iconPath.startsWith('http') ? iconPath : `${API_BASE_URL}${iconPath}`;
+  };
 
   return (
     <div className="flex flex-wrap gap-5">
@@ -44,6 +48,7 @@ export const BadgeList: React.FC<BadgeListProps> = ({ badges, isLoading }) => {
           <img
             src={badgeIconUrl(badge.icon)}
             alt={badge.name}
+            onError={(e) => (e.currentTarget.src = FALLBACK_ICON)}
             className="w-20 h-20 rounded-full object-cover border-4 border-slate-200 bg-slate-100 transition-all duration-300 group-hover:border-amber-400 shadow-lg group-hover:shadow-[0_0_20px_rgba(251,191,36,0.5)]"
           />
           <div className="absolute bottom-full mb-3 w-56 left-1/2 -translate-x-1/2 p-3 bg-slate-900 text-white text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">

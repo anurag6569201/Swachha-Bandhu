@@ -95,6 +95,9 @@ export interface Report {
  * This is for the Report Detail Page.
  */
 export interface ReportDetail extends Omit<Report, 'issue_category' | 'location' | 'user'> {
+  geofence_radius: number;
+  location_latitude: number;
+  location_longitude: number;
   // Overwrite list types with full detail types
   issue_category: IssueCategory; 
   user: User | null;

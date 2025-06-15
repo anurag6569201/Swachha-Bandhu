@@ -47,7 +47,7 @@ const NewReportPage: React.FC<Props> = ({ mode = 'new' }) => {
             try {
                 const report = await apiClient.get<ReportDetail>(`/reports/${originalReportId}/`);
                 setOriginalReport(report.data);
-                setLocationId(report.data.location.id); // Set locationId from the fetched report
+                setLocationId(report.data.location); // Set locationId from the fetched report
             } catch (error) {
                 setApiError("Could not load the report you are trying to verify.");
                 setCurrentStep('SCAN_QR'); // Revert to a safe step
