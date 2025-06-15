@@ -3,6 +3,7 @@ from .models import Report, ReportMedia, ReportStatusHistory, IssueCategory
 from locations.models import Location
 from .services import is_user_within_geofence, find_nearby_duplicate_report
 from users.serializers import UserSerializer
+from notifications.tasks import notify_user_of_status_change
 
 class IssueCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -111,7 +112,6 @@ class ReportCreateSerializer(serializers.ModelSerializer):
         validated_data.pop('user_longitude', None)
         
         report = Report.objects.create(
-            user=request.user,
             **validated_data
         )
 
@@ -151,6 +151,7 @@ class ReportModerateSerializer(serializers.ModelSerializer):
         old_status = instance.status
         new_status = validated_data.get('status', old_status)
 
+        # The super().update() call saves the instance
         report = super().update(instance, validated_data)
 
         if old_status != new_status:
@@ -160,4 +161,7 @@ class ReportModerateSerializer(serializers.ModelSerializer):
                 changed_by=user,
                 notes=validated_data.get('moderator_notes', "Status updated by moderator.")
             )
+             # TRIGGER THE NOTIFICATION TASK
+             notify_user_of_status_change.delay(instance.id)
+             
         return report

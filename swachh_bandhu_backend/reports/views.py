@@ -10,6 +10,7 @@ from .serializers import (
     IssueCategorySerializer
 )
 from core.permissions import IsModerator, IsCitizen
+from gamification.tasks import process_report_points
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all().select_related('user', 'location', 'issue_category').prefetch_related('media', 'verifications', 'status_history')
@@ -52,6 +53,12 @@ class ReportViewSet(viewsets.ModelViewSet):
         
         return qs.filter(user=user)
 
+    # ADD THIS METHOD
+    def perform_create(self, serializer):
+        report = serializer.save(user=self.request.user)
+        # Trigger the gamification task asynchronously
+        process_report_points.delay(report.id)
+
     @action(detail=True, methods=['post'], url_path='verify', permission_classes=[IsCitizen])
     def verify(self, request, pk=None):
         original_report = self.get_object()
@@ -61,8 +68,11 @@ class ReportViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         verification_report = serializer.save()
+        # ALSO TRIGGER POINTS FOR VERIFICATION HERE
+        process_report_points.delay(verification_report.id)
         read_serializer = ReportReadSerializer(verification_report, context={'request': request})
         return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
 
     @action(detail=True, methods=['patch'], url_path='moderate', permission_classes=[IsModerator])
     def moderate(self, request, pk=None):

@@ -42,9 +42,9 @@ const NewReportPage: React.FC = () => {
         if (uuidRegex.test(id)) {
           setLocationId(id);
           setCurrentStep('PROVIDE_COORDS');
-          navigate(`/report/new/${id}`, { replace: true });
+          navigate(`/app/report/new/${id}`, { replace: true });
         } else {
-          setApiError("Invalid QR Code. Please scan a valid location code.");
+          setApiError("Invalid QR Code or ID. Please scan a valid location code.");
         }
     } catch(e) {
         setApiError("Invalid QR code format. Please scan a valid location code.");
@@ -58,7 +58,7 @@ const NewReportPage: React.FC = () => {
   };
 
   const handleFormSubmit: SubmitHandler<ReportFormInputs> = async (data) => {
-    if (!locationId || !userCoords || !locationDetails) {
+    if (!locationId || !userCoords) {
         setApiError("Critical data missing. Please start over.");
         return;
     }
@@ -68,8 +68,12 @@ const NewReportPage: React.FC = () => {
     formData.append('issue_category', data.issue_category);
     formData.append('description', data.description);
     formData.append('severity', data.severity);
-    formData.append('user_latitude', userCoords.latitude.toString());
-    formData.append('user_longitude', userCoords.longitude.toString());
+
+    // --- THE FIX IS HERE ---
+    // Round the coordinates to 6 decimal places to match the backend serializer.
+    // The .toFixed(6) method handles the rounding and converts to a string.
+    formData.append('user_latitude', userCoords.latitude.toFixed(6));
+    formData.append('user_longitude', userCoords.longitude.toFixed(6));
 
     if (mediaFiles) {
       Array.from(mediaFiles).forEach(file => formData.append('media_files', file));
@@ -79,7 +83,7 @@ const NewReportPage: React.FC = () => {
     setApiError(null);
     try {
       const newReport = await createReport(formData);
-      navigate(`/report/success/${newReport.id}`);
+      navigate(`/app/report/success/${newReport.id}`);
     } catch (error: any) {
       const errorData = error.response?.data;
       if (errorData) {
@@ -104,14 +108,14 @@ const NewReportPage: React.FC = () => {
       setCurrentStep('SCAN_QR');
       setLocationId(null);
       setLocationDetails(null);
-      navigate('/report/new', { replace: true });
+      navigate('/app/report/new', { replace: true });
     }
   };
 
   const renderStep = () => {
     switch (currentStep) {
       case 'SCAN_QR':
-        return <ScanQRCodeStep onScanSuccess={handleQRCodeScanned} onScanError={setApiError} />;
+        return <ScanQRCodeStep onScanSuccess={handleQRCodeScanned} />;
       case 'PROVIDE_COORDS':
         if (!locationId) return null;
         return <ProvideCoordsStep locationId={locationId} onCoordsAndDetailsProvided={handleCoordsAndDetailsProvided} onBack={handleBack} />;
@@ -143,7 +147,7 @@ const NewReportPage: React.FC = () => {
         <Stepper steps={['Scan QR', 'Confirm Location', 'Report Details']} currentStep={currentStepIndex}/>
         <div className="mt-12">
             {apiError && currentStep === 'SCAN_QR' && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm text-center">
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm text-center" role="alert">
                     {apiError}
                 </div>
             )}

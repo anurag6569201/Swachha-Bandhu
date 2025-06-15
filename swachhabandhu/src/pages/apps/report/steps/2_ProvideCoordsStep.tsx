@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, Popup, Circle } from 'react-leaflet';
-import L from 'leaflet';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, useMap, Popup, Circle, useMapEvents } from 'react-leaflet';
+import L, { LatLng } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getLocationDetails, type LocationDetails } from '../services/locationService';
 import { isWithinGeofence } from './../utils/geo';
@@ -9,11 +9,51 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 
-// Fix for default Leaflet icon
+// --- Icon Setup ---
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, iconRetinaUrl: iconRetina, iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 L.Marker.prototype.options.icon = DefaultIcon;
+
 const TargetIcon = L.icon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 
+const UserIcon = L.icon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+
+// --- Helper Components for Map Interaction ---
+
+// This component handles manual pin placement
+function ManualLocationMarker({ onPositionChange }: { onPositionChange: (coords: UserCoordinates) => void }) {
+  const [position, setPosition] = useState<LatLng | null>(null);
+
+  const map = useMapEvents({
+    click(e) {
+      setPosition(e.latlng);
+      onPositionChange({ latitude: e.latlng.lat, longitude: e.latlng.lng });
+      map.flyTo(e.latlng, map.getZoom());
+    },
+  });
+
+  return position === null ? null : (
+    <Marker position={position} icon={UserIcon} draggable={true}
+        eventHandlers={{
+            dragend(e) {
+                const newPos = e.target.getLatLng();
+                setPosition(newPos);
+                onPositionChange({ latitude: newPos.lat, longitude: newPos.lng });
+            }
+        }}
+    >
+      <Popup>Your selected location</Popup>
+    </Marker>
+  );
+}
+
+// This component centers the map on device location when found
+const MapUpdater: React.FC<{ userCoords: UserCoordinates | null }> = ({ userCoords }) => {
+    const map = useMap();
+    useEffect(() => { if (userCoords) { map.flyTo([userCoords.latitude, userCoords.longitude], map.getZoom()); } }, [userCoords, map]);
+    return null;
+};
+
+// --- Main Component ---
 interface Props {
   locationId: string;
   onCoordsAndDetailsProvided: (coords: UserCoordinates, details: LocationDetails) => void;
@@ -25,18 +65,13 @@ const getLocationTypeIcon = (type: string) => {
     return icons[type] || '📍';
 };
 
-const MapUpdater: React.FC<{ userCoords: UserCoordinates | null }> = ({ userCoords }) => {
-    const map = useMap();
-    useEffect(() => { if (userCoords) { map.setView([userCoords.latitude, userCoords.longitude], map.getZoom()); } }, [userCoords, map]);
-    return null;
-};
-
 const ProvideCoordsStep: React.FC<Props> = ({ locationId, onCoordsAndDetailsProvided, onBack }) => {
   const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
   const [userCoords, setUserCoords] = useState<UserCoordinates | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
+  const [isManualMode, setIsManualMode] = useState(true); // Default to manual mode
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -56,6 +91,7 @@ const ProvideCoordsStep: React.FC<Props> = ({ locationId, onCoordsAndDetailsProv
 
   const handleUseDeviceLocation = () => {
     setIsVerifying(true);
+    setIsManualMode(false); // Switch out of manual mode
     setError('');
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -70,7 +106,7 @@ const ProvideCoordsStep: React.FC<Props> = ({ locationId, onCoordsAndDetailsProv
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
-
+  
   const handleConfirmLocation = async () => {
     if (!userCoords || !locationDetails) return;
     setIsVerifying(true);
@@ -79,7 +115,7 @@ const ProvideCoordsStep: React.FC<Props> = ({ locationId, onCoordsAndDetailsProv
         if (isWithinGeofence(userCoords.latitude, userCoords.longitude, locationDetails.latitude, locationDetails.longitude, locationDetails.geofence_radius)) {
             onCoordsAndDetailsProvided(userCoords, locationDetails);
         } else {
-            setError(`You must be within ${locationDetails.geofence_radius} meters of the location to report an issue.`);
+            setError(`Your selected location must be within ${locationDetails.geofence_radius} meters of the target.`);
         }
     } catch (err: any) {
         setError(err.message || "An unexpected error occurred during verification.");
@@ -103,19 +139,32 @@ const ProvideCoordsStep: React.FC<Props> = ({ locationId, onCoordsAndDetailsProv
                 <span>📍 {locationDetails.municipality_name}</span>
             </div>
         </div>
+        
+        <p className="text-center text-sm text-gray-600 mb-3">
+          {isManualMode ? 'Click on the map to place a pin at your location.' : 'Your device location is shown in green.'}
+        </p>
 
-        <div className="h-64 w-full rounded-lg overflow-hidden border border-gray-300 bg-gray-200">
-             <MapContainer center={[locationDetails.latitude, locationDetails.longitude]} zoom={17} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+        <div className="h-64 w-full rounded-lg overflow-hidden border-2 border-dashed border-gray-300 bg-gray-200">
+             <MapContainer center={[locationDetails.latitude, locationDetails.longitude]} zoom={17} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />
+                {/* Target location and geofence */}
                 <Marker position={[locationDetails.latitude, locationDetails.longitude]} icon={TargetIcon}><Popup>Target Location</Popup></Marker>
                 <Circle center={[locationDetails.latitude, locationDetails.longitude]} radius={locationDetails.geofence_radius} pathOptions={{ color: 'blue', fillColor: 'blue', fillOpacity: 0.1 }} />
-                {userCoords && <Marker position={[userCoords.latitude, userCoords.longitude]}><Popup>Your current location</Popup></Marker>}
-                <MapUpdater userCoords={userCoords} />
+                
+                {/* Logic for displaying user marker */}
+                {isManualMode ? (
+                  <ManualLocationMarker onPositionChange={setUserCoords} />
+                ) : (
+                  <>
+                    {userCoords && <Marker position={[userCoords.latitude, userCoords.longitude]} icon={UserIcon}><Popup>Your device location</Popup></Marker>}
+                    <MapUpdater userCoords={userCoords} />
+                  </>
+                )}
             </MapContainer>
         </div>
 
         <button onClick={handleUseDeviceLocation} disabled={isVerifying} className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded disabled:bg-blue-300 transition-colors">
-            {isVerifying ? 'Acquiring Location...' : 'Use My Device Location'}
+            {isVerifying && !isManualMode ? 'Acquiring Location...' : 'Use My Device Location'}
         </button>
 
         {error && <p className="text-red-500 text-sm my-4 text-center">{error}</p>}

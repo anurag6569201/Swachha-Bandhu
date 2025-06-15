@@ -82,7 +82,9 @@ const CreateReportStep: React.FC<Props> = ({ onBack, onSubmit, isSubmitting, api
                 <option value="">
                   {isLoadingCategories ? 'Loading categories...' : categoryError ? 'Error loading categories' : 'Select a category...'}
                 </option>
-                {issueCategories.map(cat => (
+                {/* --- DEFENSIVE CHECK ADDED HERE --- */}
+                {/* This prevents the app from crashing if issueCategories is not an array */}
+                {Array.isArray(issueCategories) && issueCategories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
