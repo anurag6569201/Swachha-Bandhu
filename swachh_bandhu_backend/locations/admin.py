@@ -5,7 +5,7 @@ from .models import Location
 
 @admin.register(Location)
 class LocationAdmin(admin.GISModelAdmin):
-    list_display = ('name', 'municipality', 'location_type', 'is_active', 'display_qr_code')
+    list_display = ('name', 'municipality', 'location_type', 'is_active', 'display_qr_code','latitude','longitude','geofence_radius')
     list_filter = ('municipality', 'location_type', 'is_active')
     search_fields = ('name', 'description')
     ordering = ('municipality', 'name')

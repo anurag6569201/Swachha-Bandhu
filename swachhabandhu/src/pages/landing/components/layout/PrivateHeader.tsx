@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Award, User, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Award, User, LogOut, Menu, X, ReceiptPoundSterling } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '../ui/Logo'; // Assuming you have a Logo component
 import { useAuth } from '../../../../context/AuthContext';
@@ -59,6 +59,7 @@ const PrivateHeader: React.FC = () => {
   const navLinks = [
     { name: 'Dashboard', path: '/app/dashboard', icon: <LayoutDashboard size={18} /> },
     { name: 'Rewards', path: '/app/lottery', icon: <Award size={18} /> },
+    { name: 'Report', path: '/app/report/new', icon: <ReceiptPoundSterling size={18} /> },
   ];
 
   const profileLinks = [

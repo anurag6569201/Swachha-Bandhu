@@ -63,24 +63,74 @@ export interface Location {
     location_type: string;
 }
 
+
+
+/**
+ * Represents a media file (image or video) attached to a report.
+ */
 export interface ReportMedia {
-    id: string; // UUID
-    media_type: 'IMAGE' | 'VIDEO' | 'AUDIO';
-    file: string; // URL to the file
+  id: string;
+  file: string; // This will be the URL to the file
+  uploaded_at: string;
 }
 
-export interface Report {
-    id: number;
-    user: User;
-    location: string; // UUID of the location
-    location_name: string;
+/**
+ * Represents a single entry in a report's status change history.
+ */
+export interface ReportStatusHistory {
+  status: ReportStatus;
+  timestamp: string;
+  notes: string;
+  changed_by_email: string | null;
+}
 
-    issue_type: string;
-    description: string;
-    status: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'ACTIONED';
-    media: ReportMedia[];
-    created_at: string; // ISO date string
-    
-    verification_count: number;
-    verifies_report: number | null; // ID of the report it verifies
+/**
+ * Represents a category for a reported issue, defined by the municipality.
+ */
+export interface IssueCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
+/**
+ * Defines the possible status values for a report.
+ * Matches the choices on the Django backend model.
+ */
+export type ReportStatus = 
+  | 'PENDING' 
+  | 'VERIFIED' 
+  | 'REJECTED' 
+  | 'IN_PROGRESS' 
+  | 'RESOLVED' 
+  | 'DUPLICATE';
+
+/**
+ * Defines the possible severity levels for a report.
+ */
+export type SeverityLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
+/**
+ * Represents the main Report object, combining all related data.
+ * This is the primary data structure you'll work with on the frontend.
+ */
+export interface Report {
+  id: number;
+  user: User | null;
+  location: string; // UUID of the location
+  location_name: string;
+  issue_category: IssueCategory;
+  description: string;
+  status: ReportStatus;
+  severity: SeverityLevel;
+  media: ReportMedia[];
+  created_at: string;
+  updated_at: string;
+  verification_count: number;
+  verifies_report: number | null; // ID of the report it verifies
+
+  // Fields that may only be present for moderators/admins
+  moderator_notes?: string | null;
+  action_taken_notes?: string | null;
+  status_history?: ReportStatusHistory[];
 }

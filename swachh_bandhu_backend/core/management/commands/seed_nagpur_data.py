@@ -9,7 +9,7 @@ from django.contrib.gis.geos import Point
 from subscriptions.models import SubscriptionPlan, Municipality
 from users.models import User, UserRole
 from locations.models import Location
-from reports.models import Report, ReportMedia
+from reports.models import Report, IssueCategory
 from gamification.models import Sponsor, Lottery, Badge
 
 class Command(BaseCommand):
@@ -23,6 +23,7 @@ class Command(BaseCommand):
         self.stdout.write('Deleting old data...')
         Sponsor.objects.all().delete()
         Report.objects.all().delete()
+        IssueCategory.objects.all().delete() # Added for new model
         Location.objects.all().delete()
         User.objects.filter(is_superuser=False).delete()
         Municipality.objects.all().delete()
@@ -89,56 +90,90 @@ class Command(BaseCommand):
             user.save()
             citizens.append(user)
 
-        # --- 5. Create Locations in Nagpur ---
+        # --- 5. Create Locations in Nagpur (using gis Point) ---
         self.stdout.write('Creating locations in Nagpur...')
         locations_data = [
-            {'name': 'Futala Lake Promenade', 'point': Point(79.0494, 21.1594), 'type': Location.LocationType.PARK},
-            {'name': 'Sitabuldi Market Bin', 'point': Point(79.0799, 21.1432), 'type': Location.LocationType.PUBLIC_BIN},
-            {'name': 'Nagpur Railway Station - Platform 1 Toilet', 'point': Point(79.092, 21.153), 'type': Location.LocationType.PUBLIC_TOILET},
-            {'name': 'Zero Mile Stone', 'point': Point(79.080, 21.146), 'type': Location.LocationType.PARK},
-            {'name': 'Sadar Bus Stand', 'point': Point(79.085, 21.165), 'type': Location.LocationType.BUS_STAND},
-            {'name': 'Ambazari Lake Garden Entrance', 'point': Point(79.035, 21.139), 'type': Location.LocationType.PARK},
-            {'name': 'WHC Road Pothole Spot', 'point': Point(79.055, 21.145), 'type': Location.LocationType.STREET_SEGMENT},
-            {'name': 'NMC Head Office', 'point': Point(79.082, 21.150), 'type': Location.LocationType.GOVERNMENT_OFFICE},
+            {'name': 'Futala Lake Promenade', 'point': Point(79.0494, 21.1594), 'type': Location.LocationType.PARK, 'desc': 'Popular hangout spot near Futala Lake.'},
+            {'name': 'Sitabuldi Market Bin', 'point': Point(79.0799, 21.1432), 'type': Location.LocationType.PUBLIC_BIN, 'desc': 'Main public bin at the market entrance.'},
+            {'name': 'Nagpur Railway Station - Platform 1 Toilet', 'point': Point(79.092, 21.153), 'type': Location.LocationType.PUBLIC_TOILET, 'desc': 'Public toilet facility on the main platform.'},
+            {'name': 'Zero Mile Stone', 'point': Point(79.080, 21.146), 'type': Location.LocationType.PARK, 'desc': 'Historic monument and surrounding area.'},
+            {'name': 'Sadar Bus Stand', 'point': Point(79.085, 21.165), 'type': Location.LocationType.BUS_STAND, 'desc': 'Main bus stand in the Sadar area.'},
+            {'name': 'Ambazari Lake Garden Entrance', 'point': Point(79.035, 21.139), 'type': Location.LocationType.PARK, 'desc': 'Main gate of the Ambazari Garden.'},
+            {'name': 'WHC Road Pothole Spot', 'point': Point(79.055, 21.145), 'type': Location.LocationType.STREET_SEGMENT, 'desc': 'Segment of West High Court road known for frequent potholes.'},
+            {'name': 'NMC Head Office', 'point': Point(79.082, 21.150), 'type': Location.LocationType.GOVERNMENT_OFFICE, 'desc': 'Main administrative building for the NMC.'},
         ]
         locations = []
         for loc_data in locations_data:
             location, _ = Location.objects.get_or_create(
                 name=loc_data['name'],
                 municipality=nagpur,
-                defaults={'point': loc_data['point'], 'location_type': loc_data['type']}
+                defaults={
+                    'point': loc_data['point'],
+                    'location_type': loc_data['type'],
+                    'description': loc_data['desc']
+                }
             )
             locations.append(location)
 
-        # --- 6. Create Reports ---
+        # --- 6. Create Issue Categories for Nagpur ---
+        self.stdout.write('Creating issue categories...')
+        issue_categories_data = [
+            {'name': 'Waste Management', 'description': 'Issues related to overflowing bins, garbage dumping, etc.'},
+            {'name': 'Infrastructure Damage', 'description': 'Potholes, broken streetlights, damaged public property.'},
+            {'name': 'Public Nuisance', 'description': 'Issues like waterlogging, unauthorized posters, etc.'},
+            {'name': 'Sanitation', 'description': 'Problems with public toilets, drainage, and cleanliness.'},
+        ]
+        issue_categories = []
+        for cat_data in issue_categories_data:
+            category, _ = IssueCategory.objects.get_or_create(
+                municipality=nagpur,
+                name=cat_data['name'],
+                defaults={'description': cat_data['description']}
+            )
+            issue_categories.append(category)
+
+        # --- 7. Create Reports ---
         self.stdout.write('Creating reports...')
-        issue_types = ['Overflowing Bin', 'Broken Streetlight', 'Pothole', 'Garbage Dumped', 'Damaged Bench', 'Clogged Drain']
         statuses = [Report.ReportStatus.PENDING, Report.ReportStatus.VERIFIED, Report.ReportStatus.ACTIONED, Report.ReportStatus.REJECTED]
         reports = []
         for i in range(50): # Create 50 reports
+            chosen_category = random.choice(issue_categories)
             report = Report.objects.create(
                 user=random.choice(citizens),
                 location=random.choice(locations),
-                issue_type=random.choice(issue_types),
-                description=f'This is a dummy report description for issue: {issue_types[i % len(issue_types)]}. Immediate action is needed.',
-                status=random.choices(statuses, weights=[4, 3, 2, 1], k=1)[0]
+                issue_category=chosen_category,
+                description=f'This is a dummy report description for: {chosen_category.name}. Immediate action is needed.',
+                status=random.choices(statuses, weights=[4, 3, 2, 1], k=1)[0],
+                severity=random.choice(Report.SeverityLevel.choices)[0]
             )
             reports.append(report)
         
-        # Add some verifications
-        pending_reports = Report.objects.filter(status=Report.ReportStatus.PENDING)
-        for report in pending_reports[:5]:
-            verifier = random.choice([c for c in citizens if c != report.user])
-            Report.objects.create(
-                user=verifier,
-                location=report.location,
-                issue_type=f'Verification for: {report.issue_type}',
-                description=f'Confirming that the issue reported in #{report.id} is valid.',
-                verifies_report=report,
-                status=Report.ReportStatus.VERIFIED
-            )
+        # --- 8. Add some verifications ---
+        self.stdout.write('Creating verifications for some pending reports...')
+        pending_reports = Report.objects.filter(status=Report.ReportStatus.PENDING).order_by('?')[:5]
+        for report_to_verify in pending_reports:
+            possible_verifiers = [c for c in citizens if c != report_to_verify.user]
+            if not possible_verifiers:
+                continue
+            verifier = random.choice(possible_verifiers)
 
-        # --- 7. Create Gamification Elements ---
+            # Create the verification report entry
+            verification_report = Report.objects.create(
+                user=verifier,
+                location=report_to_verify.location,
+                issue_category=report_to_verify.issue_category,
+                description=f'Confirming that the issue reported in #{report_to_verify.id} is valid.',
+                verifies_report=report_to_verify,
+                status=Report.ReportStatus.VERIFIED, # The verification itself is considered 'verified'
+                severity=report_to_verify.severity
+            )
+            
+            # Update the original report's status to VERIFIED
+            report_to_verify.status = Report.ReportStatus.VERIFIED
+            report_to_verify.moderator_notes = f"Verified by {verifier.full_name} via report #{verification_report.id}."
+            report_to_verify.save()
+
+        # --- 9. Create Gamification Elements ---
         self.stdout.write('Creating gamification elements...')
         Sponsor.objects.create(name='Haldirams Nagpur', website='https://www.haldirams.com', description='Proudly sponsoring a cleaner Nagpur.')
         Sponsor.objects.create(name='Vicco Laboratories', website='https://viccolabs.com', description='Supporting community health and hygiene.')
@@ -147,7 +182,7 @@ class Command(BaseCommand):
         Badge.objects.create(name='Civic Eye', description='Verified 5 reports.', required_verifications=5)
         Badge.objects.create(name='City Hero', description='Earned 500 points.', required_points=500)
         
-        # --- 8. Create an Active Lottery ---
+        # --- 10. Create an Active Lottery ---
         self.stdout.write('Creating an active lottery...')
         Lottery.objects.create(
             name='Nagpur Monsoon Cleanup Lottery',

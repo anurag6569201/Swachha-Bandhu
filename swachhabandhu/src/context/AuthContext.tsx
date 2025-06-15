@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, type ReactNode }
 import apiClient from '../Api';
 
 interface User {
+  [x: string]: string | null | undefined;
   id: string;
   email: string;
   full_name: string;

@@ -8,7 +8,7 @@ class ReportMediaInline(admin.TabularInline):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'location', 'issue_type', 'status', 'created_at')
+    list_display = ('id', 'user', 'location', 'status', 'created_at')
     list_filter = ('status', 'location__municipality', 'location__location_type', 'created_at')
     search_fields = ('user__email', 'location__name', 'description')
     ordering = ('-created_at',)
@@ -19,7 +19,7 @@ class ReportAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Report Details', {
-            'fields': ('user', 'location', 'issue_type', 'description', 'verifies_report')
+            'fields': ('user', 'location', 'description', 'verifies_report')
         }),
         ('Status & Moderation', {
             'fields': ('status', 'moderator_notes', 'action_taken_notes')

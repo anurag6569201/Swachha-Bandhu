@@ -3,9 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import DashboardPage from '../pages/apps/dashboard/Dashboard';
 import NotFoundPage from '../pages/landing/landingpages/NotFoundPage';
-import ScannerPage from '../pages/apps/scan/ScannerPage';
-import SubmitReportPage from '../pages/apps/report/SubmitReportPage';
 import GamificationDashboard from '../pages/apps/lottery/LotteryDashboard';
+import NewReportPage from '../pages/apps/report/NewReportPage';
+import ReportSuccessPage from '../pages/apps/report/ReportSuccessPage';
 
 const AppProtectedRoutes: React.FC = () => {
   return (
@@ -14,9 +14,10 @@ const AppProtectedRoutes: React.FC = () => {
       <Route path="lottery" element={<GamificationDashboard />} />
       
       {/* New Reporting Flow Routes */}
-      <Route path="scan" element={<ScannerPage />} />
-      <Route path="report/new/:locationId" element={<SubmitReportPage />} />
-
+      <Route path="report/new" element={<NewReportPage />} />
+      <Route path="report/new/:locationId" element={<NewReportPage />} />
+      <Route path="report/success/:reportId" element={<ReportSuccessPage />} />
+      
       {/* Default route within the protected app */}
       <Route index element={<Navigate to="dashboard" replace />} />
       
