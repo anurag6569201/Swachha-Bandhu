@@ -9,15 +9,16 @@
  * This is the base for all user-related types.
  */
 export interface User {
-  id: string; // Changed to string to match UUIDField
+  id: string; 
   email: string;
   full_name: string;
   phone_number: string | null;
+  profile_picture_url: string | null; // --- ADDED ---
   role: 'CITIZEN' | 'MODERATOR' | 'MUNICIPAL_ADMIN' | 'SUPER_ADMIN';
   total_points: number;
-  municipality: string | null; // UUID of the municipality
+  municipality: string | null; 
   municipality_name: string | null;
-  date_joined: string; // ISO date string
+  date_joined: string; 
 }
 
 

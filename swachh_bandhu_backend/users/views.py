@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from rest_framework import generics, status, permissions, views
+from rest_framework import generics, status, permissions, views, parsers
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -68,6 +68,8 @@ class PasswordResetConfirmView(generics.GenericAPIView):
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
+    # --- ADD PARSER CLASSES ---
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
     
     def get_object(self):
         return self.request.user

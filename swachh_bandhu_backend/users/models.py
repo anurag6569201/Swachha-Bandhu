@@ -1,3 +1,4 @@
+# users/models.py
 import uuid
 import secrets
 from datetime import timedelta
@@ -8,13 +9,18 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from subscriptions.models import Municipality
 
+def profile_picture_upload_path(instance, filename):
+    return f'profile_pictures/{instance.id}/{filename}'
+
 class UserRole(models.TextChoices):
+    # ... (no change)
     CITIZEN = 'CITIZEN', _('Citizen')
     MODERATOR = 'MODERATOR', _('Moderator')
     MUNICIPAL_ADMIN = 'MUNICIPAL_ADMIN', _('Municipal Admin')
     SUPER_ADMIN = 'SUPER_ADMIN', _('Super Admin')
 
 class UserManager(BaseUserManager):
+    # ... (no change)
     def create_user(self, email, full_name, password=None, **extra_fields):
         if not email:
             raise ValueError(_('The Email field must be set'))
@@ -40,11 +46,19 @@ class UserManager(BaseUserManager):
         
         return self.create_user(email, full_name, password, **extra_fields)
 
+
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(_('email address'), unique=True)
     full_name = models.CharField(_('full name'), max_length=150)
     phone_number = models.CharField(_('phone number'), max_length=20, blank=True, null=True)
+    
+    # --- NEW FIELD ---
+    profile_picture = models.ImageField(
+        upload_to=profile_picture_upload_path, 
+        null=True, 
+        blank=True
+    )
     
     role = models.CharField(
         max_length=20,
@@ -82,6 +96,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
+    # ... (rest of the model methods are unchanged)
     def generate_password_reset_token(self):
         self.password_reset_token = secrets.token_urlsafe(32)
         self.password_reset_token_created_at = timezone.now()

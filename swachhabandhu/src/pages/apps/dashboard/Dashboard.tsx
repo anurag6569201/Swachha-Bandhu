@@ -10,10 +10,12 @@ import { useAuth } from '../../../context/AuthContext';
 import apiClient from '../../../Api';
 import { 
     Award, BarChart3, Clock, FileCheck, FileClock, FileText, Users, TrendingUp, 
-    Zap, LogOut, ArrowUp, ArrowDown, Minus, Trophy, LineChart, ShieldCheck, Inbox
+    Zap, LogOut, ArrowUp, ArrowDown, Minus, Trophy, LineChart, ShieldCheck, Inbox,
+    PlusCircle
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-// --- TYPE DEFINITIONS (Unchanged) ---
+// --- TYPE DEFINITIONS ---
 interface KpiChange { current: number; previous: number; change_percentage: number | null; }
 interface HeatmapPoint { latitude: number; longitude: number; intensity: number; }
 interface MunicipalKpi { total_reports: number; pending_reports: number; verified_reports: number; actioned_reports: number; rejected_reports: number; total_active_citizens: number; average_resolution_time_hours: number | null; total_locations: number; reports_in_last_30_days: KpiChange; }
@@ -24,19 +26,20 @@ interface NextBadgeProgress { name: string; description: string; icon_url: strin
 interface TopContributor { full_name: string; total_points: number; reports_filed: number; profile_image_url?: string | null; }
 interface RecentActivity { activity_type: 'points' | 'badge'; details: string; points: number; timestamp: string; report_id: number | null; badge_name: string | null; badge_icon_url: string | null; }
 
+// --- LOADING SPINNER ---
+const LoadingSpinner: React.FC = () => (
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+);
 
 // --- ADVANCED HELPER & UI COMPONENTS ---
 
-/**
- * Creates a user avatar from initials if no image URL is provided.
- */
 const UserAvatar: React.FC<{ name: string; imageUrl?: string | null; className?: string; }> = ({ name, imageUrl, className = 'w-10 h-10' }) => {
     const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
     const colors = ['bg-teal-500', 'bg-cyan-500', 'bg-sky-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500'];
     const color = colors[name.charCodeAt(0) % colors.length];
 
     if (imageUrl) {
-        return <img src={imageUrl} alt={name} className={`${className} rounded-full object-cover`} />;
+        return <img src={imageUrl} alt={name} className={`${className} rounded-full object-cover bg-gray-200`} />;
     }
 
     return (
@@ -46,9 +49,6 @@ const UserAvatar: React.FC<{ name: string; imageUrl?: string | null; className?:
     );
 };
 
-/**
- * A visually appealing placeholder for empty states in charts or lists.
- */
 const EmptyState: React.FC<{ icon: React.ReactNode; title: string; message: string; }> = ({ icon, title, message }) => (
     <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 p-4">
         <div className="p-3 bg-slate-100 rounded-full mb-3">{icon}</div>
@@ -57,18 +57,12 @@ const EmptyState: React.FC<{ icon: React.ReactNode; title: string; message: stri
     </div>
 );
 
-/**
- * Displays a trend indicator icon (Up, Down, or Neutral).
- */
 const TrendIcon: React.FC<{ change: number | null }> = ({ change }) => {
     if (change === null || change === 0) return <Minus size={14} className="text-gray-500" />;
     if (change > 0) return <ArrowUp size={14} className="text-green-500" />;
     return <ArrowDown size={14} className="text-red-500" />;
 };
 
-/**
- * An enhanced KPI card with gradient background and better hover effects.
- */
 const KpiCard: React.FC<{ icon: React.ReactNode; title: string; value: string | number; color: string; changeData?: KpiChange; }> = ({ icon, title, value, color, changeData }) => (
     <motion.div 
         className="relative p-6 rounded-xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out"
@@ -97,9 +91,18 @@ const KpiCard: React.FC<{ icon: React.ReactNode; title: string; value: string | 
     </motion.div>
 );
 
-/**
- * A styled container for charts that handles empty states.
- */
+const ActionCard: React.FC<{ to: string; icon: React.ReactNode; title: string; description: string; color: string }> = ({ to, icon, title, description, color }) => (
+    <motion.div whileHover={{ y: -5 }} className="h-full">
+        <Link to={to} className={`block h-full p-6 rounded-xl shadow-lg text-white transition-all duration-300 ${color}`}>
+            <div className="flex items-center gap-4 mb-3">
+                {icon}
+                <h3 className="text-xl font-bold">{title}</h3>
+            </div>
+            <p className="text-sm opacity-90">{description}</p>
+        </Link>
+    </motion.div>
+);
+
 const ChartContainer: React.FC<{ title: string; children: React.ReactNode; className?: string; isEmpty?: boolean; emptyStateProps?: { icon: React.ReactNode; title: string; message: string; } }> = ({ title, children, className = "", isEmpty = false, emptyStateProps }) => (
     <motion.div 
         className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg w-full ${className}`} 
@@ -117,9 +120,6 @@ const ChartContainer: React.FC<{ title: string; children: React.ReactNode; class
     </motion.div>
 );
 
-/**
- * A component for rendering the report intensity map.
- */
 const ReportHeatmap: React.FC<{ points: HeatmapPoint[] }> = ({ points }) => {
     const addressPoints: [number, number, number][] = points.map(p => [p.latitude, p.longitude, p.intensity]);
     const center: [number, number] = points.length > 0 ? [points[0].latitude, points[0].longitude] : [20.5937, 78.9629];
@@ -228,6 +228,23 @@ const CitizenDashboard: React.FC<{ data: { kpis: CitizenKpi; recent_activity: Re
                 <KpiCard icon={<FileText size={28} />} title="Reports Filed" value={totalReportsFiled} color="#4338ca" />
                 <KpiCard icon={<FileCheck size={28} />} title="Reports Verified" value={kpis.reports_verified ?? 0} color="#6d28d9" />
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ActionCard 
+                    to="/app/report/new" 
+                    icon={<PlusCircle size={28}/>}
+                    title="Report a New Issue"
+                    description="Found a problem? Scan a QR code to submit a new report and earn points."
+                    color="bg-gradient-to-br from-blue-600 to-blue-500"
+                />
+                 <ActionCard 
+                    to="/app/verify" 
+                    icon={<ShieldCheck size={28}/>}
+                    title="Verify Reports"
+                    description="Help the community by verifying pending reports. Your contribution matters (and earns rewards!)."
+                    color="bg-gradient-to-br from-teal-600 to-teal-500"
+                />
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <ChartContainer title="My Impact" className="lg:col-span-1" isEmpty={totalReportsFiled === 0} emptyStateProps={{ icon: <FileText/>, title:"No Reports Filed", message:"File a report to see your impact here."}}>
@@ -271,16 +288,13 @@ const CitizenDashboard: React.FC<{ data: { kpis: CitizenKpi; recent_activity: Re
     );
 };
 
-/**
- * Displays a labeled progress bar for badge progress.
- */
 const ProgressDisplay: React.FC<{ label: string; current: number; required: number; color: string }> = ({ label, current, required, color }) => {
-    const percent = Math.min(100, Math.round((current / required) * 100));
+    const percent = required > 0 ? Math.min(100, Math.round((current / required) * 100)) : 0;
     return (
         <div>
             <div className="flex justify-between mb-1">
                 <span className="text-sm font-medium text-gray-700">{label}</span>
-                <span className="text-sm text-gray-500">{current} / {required}</span>
+                <span className="text-sm text-gray-500">{current.toLocaleString()} / {required.toLocaleString()}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
                 <div className="h-3 rounded-full transition-all duration-300" style={{ width: `${percent}%`, backgroundColor: color }}></div>
@@ -319,22 +333,20 @@ const DashboardPage: React.FC = () => {
     }, [isMunicipal, authLoading, user]);
     
     if (authLoading) {
-        // A simple spinner while auth context is loading user data
-        return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><LoadingSpinner /></div>;
+        return <div className="flex items-center justify-center h-full"><LoadingSpinner /></div>;
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8 mt-20">
             <motion.div className="max-w-7xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                 <header className="mb-8 flex flex-wrap justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
-                        {user && <UserAvatar name={user.full_name} imageUrl={user.profile_image_url} className="w-14 h-14" />}
+                        {user && <UserAvatar name={user.full_name} imageUrl={user.profile_picture_url} className="w-14 h-14" />}
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                             <p className="text-gray-600 mt-1">{user ? `Welcome back, ${user.full_name}!` : 'Welcome to the Dashboard'}</p>
                         </div>
                     </div>
-                    {user && <button onClick={logout} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"><LogOut size={20} className="mr-2" />Logout</button>}
                 </header>
 
                 {loading ? <DashboardSkeleton isMunicipal={isMunicipal} /> : 

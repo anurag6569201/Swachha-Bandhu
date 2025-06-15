@@ -46,11 +46,18 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     municipality_name = serializers.CharField(source='municipality.name', read_only=True)
+    # --- ADDED FIELD ---
+    profile_picture_url = serializers.ImageField(source='profile_picture', read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'full_name', 'phone_number', 'role', 'total_points', 'municipality', 'municipality_name', 'date_joined')
+        fields = (
+            'id', 'email', 'full_name', 'phone_number', 'role', 
+            'total_points', 'municipality', 'municipality_name', 
+            'date_joined', 'profile_picture_url' # --- ADDED ---
+        )
         read_only_fields = ('role', 'total_points', 'municipality', 'municipality_name', 'date_joined')
+
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField(label=_("Email Address"))
@@ -106,4 +113,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['full_name', 'phone_number']
+        fields = ['full_name', 'phone_number', 'profile_picture'] # --- ADDED profile_picture ---
+        extra_kwargs = {
+            'profile_picture': {'required': False}
+        }
