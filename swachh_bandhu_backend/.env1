@@ -1,6 +1,6 @@
 SECRET_KEY='django-insecure-87v9x77w9&0e7lgrnc1^2t(bk1)72rv)vgeh*xjhb7iicpi2h9'
 DEBUG=True
-DATABASE_URL='postgres://postgre6569201:@AS@postgre6569201.postgres.database.azure.com:5432/development-bandhu?sslmode=require'
+DATABASE_URL='postgres://postgre6569201:{password}@postgre6569201.postgres.database.azure.com:5432/development-bandhu?sslmode=require'
 ALLOWED_HOSTS='127.0.0.1,localhost'
 
 CORS_ALLOWED_ORIGINS='http://localhost:5173,http://127.0.0.1:5173'
