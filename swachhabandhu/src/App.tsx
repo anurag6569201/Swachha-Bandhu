@@ -18,20 +18,24 @@ import AppProtectedRoutes from './routes/AppProtectedRoutes';
 import NotFoundPage from './pages/landing/landingpages/NotFoundPage';
 import PrivateLayout from './layouts/PrivateLayout';
 
+import AppLayout from './pages/apps/components/AppLayout';
+
 function AppStructure() {
   return (
     <Routes>
-      <Route element={<PrivateLayout />}>
+      {/* <Route element={<PrivateLayout />}> */}
 
-        <Route
-          path="/app/*"
-          element={
-            <ProtectedRoute>
+      <Route
+        path="/app/*"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
               <AppProtectedRoutes />
-            </ProtectedRoute>
-          }
-        />
-      </Route>
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      {/* </Route> */}
 
       <Route element={<PublicLayout />}>
         <Route
