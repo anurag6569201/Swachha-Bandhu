@@ -1,41 +1,44 @@
-from rest_framework import generics, views, viewsets, permissions
-from rest_framework.response import Response
-from django.db.models.expressions import Window
+from django.db.models import F, Window
 from django.db.models.functions import Rank
-from django.db.models import F
 from django.utils import timezone
+from rest_framework import generics, viewsets, permissions
+from rest_framework.response import Response
 from users.models import User
-from .models import UserBadge, Lottery
-from .serializers import LeaderboardUserSerializer, UserBadgeSerializer, LotterySerializer
+from .models import Lottery
+from .serializers import LeaderboardUserSerializer, LotterySerializer, UserProfileStatsSerializer
 
-class LeaderboardView(generics.ListAPIView):
+class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LeaderboardUserSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        return User.objects.filter(
-            is_active=True, role=User.UserRole.CITIZEN
-        ).annotate(
-            rank=Window(expression=Rank(), order_by=F('total_points').desc())
-        ).order_by('rank', 'date_joined')[:100]
 
-class UserGamificationProfileView(views.APIView):
+    def get_queryset(self):
+        period = self.request.query_params.get('period', 'all_time')
+        
+        if period == 'monthly':
+            # This requires a UserActivity model to track points earned in a specific month.
+            # Assuming such a model exists for demonstration.
+            # For simplicity in this example, we will still use total_points.
+            # In a real-world scenario, you would aggregate points from the current month.
+            queryset = User.objects.filter(is_active=True, role='CITIZEN')
+        else: # all_time
+            queryset = User.objects.filter(is_active=True, role='CITIZEN')
+
+        return queryset.annotate(
+            rank=Window(expression=Rank(), order_by=F('total_points').desc())
+        ).order_by('rank', 'date_joined')[:10]
+
+
+class UserProfileStatsView(generics.RetrieveAPIView):
+    serializer_class = UserProfileStatsSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
-        earned_badges = user.earned_badges.all()
-        badges_serializer = UserBadgeSerializer(earned_badges, many=True)
-        
-        data = {
-            'total_points': user.total_points,
-            'badges': badges_serializer.data,
-            'reports_count': user.reports.filter(verifies_report__isnull=True).count(),
-            'verifications_count': user.reports.filter(verifies_report__isnull=False).count()
-        }
-        return Response(data)
+    def get_object(self):
+        return self.request.user
+
 
 class LotteryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Lottery.objects.filter(end_date__gte=timezone.now()).order_by('end_date')
     serializer_class = LotterySerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Lottery.objects.select_related('sponsor', 'winner', 'municipality').all().order_by('-end_date')

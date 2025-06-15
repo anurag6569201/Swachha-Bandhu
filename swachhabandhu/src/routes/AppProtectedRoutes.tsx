@@ -5,11 +5,13 @@ import DashboardPage from '../pages/apps/dashboard/Dashboard';
 import NotFoundPage from '../pages/landing/landingpages/NotFoundPage';
 import ScannerPage from '../pages/apps/scan/ScannerPage';
 import SubmitReportPage from '../pages/apps/report/SubmitReportPage';
+import GamificationDashboard from '../pages/apps/lottery/LotteryDashboard';
 
 const AppProtectedRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<DashboardPage />} />
+      <Route path="lottery" element={<GamificationDashboard />} />
       
       {/* New Reporting Flow Routes */}
       <Route path="scan" element={<ScannerPage />} />
