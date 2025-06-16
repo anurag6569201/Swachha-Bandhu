@@ -19,11 +19,11 @@ export default function GamificationDashboard() {
   };
 
   return (
-    <div className="mt-20 bg-slate-50 text-slate-800 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
+    <div className="mt-20 text-slate-800 min-h-screen p-4 sm:p-6 lg:p-8 font-sans mx-auto p-4 sm:p-6 lg:p-8 mt-20">
       <div 
         className="absolute top-0 left-0 w-full h-full bg-grid-slate-900/[0.04] [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]">
       </div>
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}

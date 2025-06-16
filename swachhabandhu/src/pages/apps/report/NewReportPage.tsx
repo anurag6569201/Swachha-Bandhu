@@ -177,8 +177,8 @@ const NewReportPage: React.FC<Props> = ({ mode = 'new' }) => {
   const pageTitle = mode === 'verify' ? "Verify an Existing Issue" : "Report a New Issue";
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-lg shadow-md p-6 sm:p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 mt-10">
+      <div className="w-full max-w-xl bg-white rounded-lg p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">{pageTitle}</h1>
         <Stepper steps={['Scan QR', 'Confirm Location', 'Submit Verification']} currentStep={currentStepIndex}/>
         <div className="mt-12">

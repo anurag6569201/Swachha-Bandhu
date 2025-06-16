@@ -74,7 +74,7 @@ const MyReportsPage: React.FC = () => {
     const { data: reports, isLoading, error } = useApi(fetchMyReports);
 
     return (
-        <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto p-4 sm:p-6 lg:p-8 mt-20">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                     <FileText /> My Reports

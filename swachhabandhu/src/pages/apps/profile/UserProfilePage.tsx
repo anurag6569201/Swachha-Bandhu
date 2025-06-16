@@ -77,11 +77,11 @@ const UserProfilePage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto p-4 sm:p-6 lg:p-8 mt-20">
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-lg p-8"
+                className="bg-white rounded-xl"
             >
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
                 <p className="text-gray-500 mb-8">Update your personal information here.</p>
@@ -105,7 +105,7 @@ const UserProfilePage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all"
+                            className="absolute bottom-0 right-0 bg-teal-600 text-white p-2 rounded-full hover:bg-teal-700 transition-all"
                         >
                             <Camera size={16} />
                         </button>
@@ -116,13 +116,13 @@ const UserProfilePage: React.FC = () => {
                         <input
                             {...register('full_name', { required: 'Full name is required' })}
                             placeholder="Full Name"
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
                         />
                         {errors.full_name && <p className="mt-1 text-sm text-red-600">{errors.full_name.message}</p>}
                     </div>
                     
                     <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} style={{top:'40%'}}/>
                         <input
                             type="email"
                             value={user.email}
@@ -137,7 +137,7 @@ const UserProfilePage: React.FC = () => {
                         <input
                             {...register('phone_number')}
                             placeholder="Phone Number (Optional)"
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
                         />
                     </div>
 
@@ -148,7 +148,7 @@ const UserProfilePage: React.FC = () => {
                         <button
                             type="submit"
                             disabled={isSubmitting || !isDirty}
-                            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-all"
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed transition-all"
                         >
                             <Save size={20} />
                             {isSubmitting ? 'Saving...' : 'Save Changes'}

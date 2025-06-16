@@ -337,8 +337,8 @@ const DashboardPage: React.FC = () => {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 mt-20">
-            <motion.div className="max-w-7xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+        <div className="mx-auto p-4 sm:p-6 lg:p-8 mt-20">
+            <motion.div className="mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                 <header className="mb-8 flex flex-wrap justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
                         {user && <UserAvatar name={user.full_name} imageUrl={user.profile_picture_url} className="w-14 h-14" />}
