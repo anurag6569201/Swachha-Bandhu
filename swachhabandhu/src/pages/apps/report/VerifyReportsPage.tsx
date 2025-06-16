@@ -41,7 +41,7 @@ const VerificationReportCard: React.FC<{ report: Report }> = ({ report }) => (
         <div className="bg-gray-50 px-5 py-3">
             <Link 
                 to={`/app/report/verify/${report.id}`} 
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700"
             >
                 <CheckSquare size={16} className="mr-2" />
                 Verify This Report
@@ -54,16 +54,16 @@ const VerifyReportsPage: React.FC = () => {
     const { data: reports, isLoading, error } = useApi(fetchPendingReports);
 
     return (
-        <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto p-4 sm:p-6 lg:p-8 mt-20">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                     <ListChecks /> Verify Reports
                 </h1>
                 <p className="text-gray-600 mt-2">Help your municipality by verifying reports from fellow citizens. You'll earn points for each successful verification!</p>
-                 <div className="mt-4 p-4 bg-blue-50 text-blue-800 border-l-4 border-blue-500 rounded-r-lg">
+                 <div className="mt-4 p-4 bg-teal-50 text-teal-800 border-l-4 border-teal-500 rounded-r-lg">
                     <div className="flex">
                         <div className="flex-shrink-0">
-                            <HelpCircle className="h-5 w-5 text-blue-400" />
+                            <HelpCircle className="h-5 w-5 text-teal-400" />
                         </div>
                         <div className="ml-3">
                             <p className="text-sm">

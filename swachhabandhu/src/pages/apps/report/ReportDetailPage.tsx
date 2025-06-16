@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Calendar, User, Hash, MapPin, Tag, Shield, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Calendar, User, Hash, MapPin, Tag, Shield, FileText, CheckCircle, Clock, Package } from 'lucide-react';
 
 const fetchReportDetail = async (reportId: string): Promise<ReportDetail> => {
     const response = await apiClient.get<ReportDetail>(`/reports/${reportId}/`);
@@ -90,12 +90,14 @@ const ReportDetailPage: React.FC = () => {
     const locationPosition: [number, number] = [report.location_latitude, report.location_longitude];
 
     return (
-        <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto p-4 sm:p-6 lg:p-8 mt-20">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="bg-white rounded-xl">
                     <div className="flex flex-col md:flex-row justify-between md:items-center border-b pb-4 mb-6">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Report Details</h1>
+                                            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                                <FileText /> Report Detail
+                                            </h1>
                             <p className="text-gray-500 flex items-center gap-1 mt-1"><Hash size={14}/> ID: {report.id}</p>
                         </div>
                         <span className={`mt-3 md:mt-0 px-3 py-1.5 text-sm font-semibold rounded-full ${ {PENDING: 'bg-yellow-100 text-yellow-800', VERIFIED: 'bg-blue-100 text-blue-800', ACTIONED: 'bg-green-100 text-green-800', REJECTED: 'bg-red-100 text-red-800'}[report.status] || 'bg-gray-100'}`}>

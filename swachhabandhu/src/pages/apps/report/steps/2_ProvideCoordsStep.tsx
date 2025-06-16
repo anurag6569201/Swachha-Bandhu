@@ -131,12 +131,12 @@ const ProvideCoordsStep: React.FC<Props> = ({ locationId, onCoordsAndDetailsProv
   return (
     <div className="flex flex-col animate-fade-in">
         <h2 className="text-lg font-semibold mb-1 text-gray-700">Step 2: Confirm Your Location</h2>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center mb-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-left mb-4">
             <h3 className="text-xl font-bold text-blue-700 my-1">{locationDetails.name}</h3>
             {locationDetails.description && <p className="text-xs text-gray-500 italic mt-1">"{locationDetails.description}"</p>}
-            <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 mt-2">
+            <div className="text-xs text-gray-500 mt-2">
                 <span>{getLocationTypeIcon(locationDetails.location_type)} {locationDetails.location_type.replace(/_/g, ' ')}</span>
-                <span>📍 {locationDetails.municipality_name}</span>
+                <br /><span>📍 {locationDetails.municipality_name}</span>
             </div>
         </div>
         

@@ -100,12 +100,12 @@ const PrivateHeader: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
+      className={`px-4 sm:px-6 lg:px-8 fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
         ? 'bg-white/90 backdrop-blur-sm shadow-md border-b border-slate-200/70 py-2'
         : 'bg-white py-4'
         }`}
     >
-      <div className="container mx-auto px-4">
+      <div className="mx-auto">
         <div className="flex justify-between items-center">
           <Link to="/app/dashboard" className="flex items-center gap-2">
             <Logo />
