@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --chart-tension: 0.4; --chart-color: 'rgb(59, 130, 246)'; }
+        body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .kpi-card { transition: all 0.2s ease-in-out; }
+        .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .data-table tbody tr:hover { background-color: #f8fafc; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-screen-2xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">Activity Pulse</h1>
+                <p class="text-slate-500 mt-1">Real-time and historical analytics for your application.</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <div class="flex items-center space-x-2 bg-white px-3 py-2 rounded-lg shadow-sm">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <p class="text-sm font-semibold"><span id="realtime-users">-</span> active users</p>
+                </div>
+                <select id="period-selector" class="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                    <option value="24h" selected>Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                </select>
+            </div>
+        </header>
+
+        <main id="dashboard-content" class="opacity-0 transition-opacity duration-500">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-slate-500 font-medium">Unique Visitors</h2>
+                    <p id="kpi-visitors" class="text-4xl font-bold text-slate-800 mt-2">-</p>
+                </div>
+                <div class="kpi-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-slate-500 font-medium">Sessions</h2>
+                    <p id="kpi-sessions" class="text-4xl font-bold text-slate-800 mt-2">-</p>
+                </div>
+                <div class="kpi-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-slate-500 font-medium">Avg. Session Duration</h2>
+                    <p id="kpi-duration" class="text-4xl font-bold text-slate-800 mt-2">-</p>
+                </div>
+                <div class="kpi-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-slate-500 font-medium">Bounce Rate</h2>
+                    <p id="kpi-bounce" class="text-4xl font-bold text-slate-800 mt-2">- %</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <h2 class="text-xl font-semibold text-slate-800 mb-4">Session Trends</h2>
+                <canvas id="sessions-chart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-4">Top Pages</h2>
+                    <table class="w-full text-left text-sm text-slate-600 data-table">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                            <tr><th class="p-3">Path</th><th class="p-3 text-right">Views</th></tr>
+                        </thead>
+                        <tbody id="pages-table-body"></tbody>
+                    </table>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-4">Devices</h2>
+                    <canvas id="devices-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-4">Top Referrers</h2>
+                    <table class="w-full text-left text-sm text-slate-600 data-table">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                            <tr><th class="p-3">Source</th><th class="p-3 text-right">Sessions</th></tr>
+                        </thead>
+                        <tbody id="referrers-table-body"></tbody>
+                    </table>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-4">Top Countries</h2>
+                    <table class="w-full text-left text-sm text-slate-600 data-table">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                            <tr><th class="p-3">Country</th><th class="p-3 text-right">Sessions</th></tr>
+                        </thead>
+                        <tbody id="countries-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                 <h2 class="text-xl font-semibold text-slate-800 mb-4">Goal Performance</h2>
+                 <table class="w-full text-left text-sm text-slate-600 data-table">
+                     <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                         <tr>
+                            <th class="p-3">Goal</th>
+                            <th class="p-3">Trigger Event</th>
+                            <th class="p-3 text-right">Conversions</th>
+                            <th class="p-3 text-right">Conversion Rate</th>
+                        </tr>
+                     </thead>
+                     <tbody id="goals-table-body"></tbody>
+                 </table>
+             </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const periodSelector = document.getElementById('period-selector');
+    const contentEl = document.getElementById('dashboard-content');
+    let charts = {}; // To hold chart instances
+
+    const API_ENDPOINTS = {
+        analytics: '{% url "activity-pulse:analytics_api" %}',
+        realtime: '{% url "activity_pulse:realtime_api" %}'
+    };
+
+    const showLoader = () => contentEl.classList.add('opacity-0');
+    const hideLoader = () => contentEl.classList.remove('opacity-0');
+    
+    // --- UTILITY FUNCTIONS ---
+    const formatDuration = (seconds) => {
+        if (seconds < 60) return `${Math.round(seconds)}s`;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.round(seconds % 60);
+        return `${minutes}m ${remainingSeconds}s`;
+    };
+
+    const createOrUpdateChart = (ctx, type, data, options) => {
+        const chartId = ctx.canvas.id;
+        if (charts[chartId]) {
+            charts[chartId].data = data;
+            charts[chartId].update();
+        } else {
+            charts[chartId] = new Chart(ctx, { type, data, options });
+        }
+    };
+    
+    const populateTable = (tbodyId, data, columns) => {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = ''; // Clear existing rows
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${columns.length}" class="text-center p-4 text-slate-500">No data available for this period.</td></tr>`;
+            return;
+        }
+        data.forEach(item => {
+            const row = tbody.insertRow();
+            columns.forEach((col, index) => {
+                const cell = row.insertCell(index);
+                cell.textContent = item[col.key] || 'Direct';
+                cell.className = col.className || 'p-3';
+            });
+        });
+    };
+
+    // --- DATA FETCHING AND RENDERING ---
+    async function fetchDashboardData() {
+        showLoader();
+        const period = periodSelector.value;
+        try {
+            const response = await fetch(`${API_ENDPOINTS.analytics}?period=${period}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            renderDashboard(data);
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            contentEl.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">Failed to load analytics data. Please try again later.</div>`;
+        } finally {
+            hideLoader();
+        }
+    }
+    
+    async function fetchRealtimeData() {
+        try {
+            const response = await fetch(API_ENDPOINTS.realtime);
+            const data = await response.json();
+            document.getElementById('realtime-users').textContent = data.active_users || '0';
+        } catch (error) {
+            console.error('Error fetching real-time data:', error);
+            document.getElementById('realtime-users').textContent = '?';
+        }
+    }
+
+    function renderDashboard(data) {
+        // KPIs
+        document.getElementById('kpi-visitors').textContent = data.key_metrics.unique_visitors.toLocaleString();
+        document.getElementById('kpi-sessions').textContent = data.key_metrics.sessions.toLocaleString();
+        document.getElementById('kpi-duration').textContent = formatDuration(data.key_metrics.avg_duration_seconds);
+        document.getElementById('kpi-bounce').textContent = `${data.key_metrics.bounce_rate}%`;
+
+        // Sessions Chart
+        createOrUpdateChart(
+            document.getElementById('sessions-chart').getContext('2d'),
+            'line',
+            {
+                labels: data.charts.sessions.labels,
+                datasets: [{
+                    label: 'Sessions',
+                    data: data.charts.sessions.data,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgb(59, 130, 246)',
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                }]
+            },
+            {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } },
+                plugins: { legend: { display: false } }
+            }
+        );
+
+        // Devices Chart
+        createOrUpdateChart(
+            document.getElementById('devices-chart').getContext('2d'),
+            'doughnut',
+            {
+                labels: data.tables.devices.labels,
+                datasets: [{
+                    data: data.tables.devices.data,
+                    backgroundColor: ['#3b82f6', '#10b981', '#f97316'],
+                    borderWidth: 0,
+                }]
+            },
+            { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        );
+        
+        // Populate Tables
+        populateTable('pages-table-body', data.tables.pages, [
+            { key: 'path', className: 'p-3 font-medium text-slate-700' },
+            { key: 'count', className: 'p-3 text-right' }
+        ]);
+        populateTable('referrers-table-body', data.tables.referrers, [
+            { key: 'referrer_domain', className: 'p-3 font-medium text-slate-700' },
+            { key: 'count', className: 'p-3 text-right' }
+        ]);
+        populateTable('countries-table-body', data.tables.countries, [
+            { key: 'country', className: 'p-3 font-medium text-slate-700' },
+            { key: 'count', className: 'p-3 text-right' }
+        ]);
+        populateTable('goals-table-body', document.getElementById('goals-table-body').tBodies[0], data.tables.goals, [
+            { key: 'name', className: 'p-3 font-medium text-slate-700' },
+            { key: 'event', className: 'p-3 font-mono text-xs' },
+            { key: 'conversions', className: 'p-3 text-right font-semibold' },
+            { key: 'conversion_rate', className: 'p-3 text-right', formatter: (v) => `${v}%` }
+        ]);
+    }
+
+    // --- INITIALIZATION ---
+    periodSelector.addEventListener('change', fetchDashboardData);
+    fetchDashboardData();
+    fetchRealtimeData();
+    setInterval(fetchRealtimeData, 15000); // Poll for real-time data every 15 seconds
+});
+</script>
+</body>
+</html>

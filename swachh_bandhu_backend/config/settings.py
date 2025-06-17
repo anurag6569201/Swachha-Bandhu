@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'gamification.apps.GamificationConfig',
     'notifications.apps.NotificationsConfig',
     'dashboard.apps.DashboardConfig',
+    'activity_pulse.apps.ActivityPulseConfig',
 ]
 
 MIDDLEWARE = [
@@ -43,6 +44,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'activity_pulse.middleware.ActivityPulseMiddleware', # package testing middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -52,7 +54,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -165,4 +167,48 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'subscriptions.tasks.check_municipal_subscriptions',
         'schedule': timedelta(hours=24),
     },
+}
+
+
+
+# --- DJANGO ACTIVITY PULSE CONFIGURATION ---
+
+ACTIVITY_PULSE_SETTINGS = {
+    # How many seconds of inactivity marks the end of a session.
+    'SESSION_TIMEOUT_SECONDS': 1800,  # 30 minutes
+
+    # A path to the GeoLite2 City database (.mmdb file) from MaxMind for IP geolocation.
+    # Download it from: https://www.maxmind.com/en/geolite2/signup
+    # Example: 'path/to/your/GeoLite2-City.mmdb'
+    'GEOIP_DATABASE_PATH': BASE_DIR / 'data' / 'GeoLite2-City.mmdb',
+
+    # Anonymize IP addresses by masking the last octet (e.g., 192.168.1.1 -> 192.168.1.0).
+    'ANONYMIZE_IP': True,
+
+    # List of URL path prefixes (not regex) to consider as API calls.
+    'API_PREFIXES': ['/api/', '/graphql/'],
+
+    # List of user agents to ignore (e.g., bots and crawlers). Uses regex matching.
+    'EXCLUDE_USER_AGENTS': [
+        r'.*?bot.*?',
+        r'.*?crawler.*?',
+        r'.*?spider.*?',
+        r'python-requests',
+        r'UptimeRobot.*?',
+    ],
+
+    # List of URL paths (as regular expressions) to exclude from all tracking.
+    'EXCLUDE_PATHS': [
+        r'^/admin/.*',
+        r'^/activity-pulse/.*', # Exclude the dashboard itself
+    ],
+
+    # If True, events and page views from superusers will be tracked.
+    'TRACK_SUPERUSERS': False,
+
+    # If True, events and page views from staff users will be tracked.
+    'TRACK_STAFF': False,
+    
+    # The timezone for reporting. Defaults to Django's TIME_ZONE.
+    'REPORTING_TIMEZONE': TIME_ZONE,
 }
